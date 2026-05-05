@@ -1,46 +1,45 @@
-# Perseus Control v4 — Requirements
-# Compatible con Railway/Render (Linux) y Windows local
+# Perseus Control v4 — Requirements Railway/Render compatible
 
-# Core
-Django==5.2.5
+# Core Django
+Django>=5.1,<5.3
 python-decouple==3.8
 
-# Base de datos (Railway usa PostgreSQL)
+# Base de datos
 psycopg2-binary==2.9.9
 dj-database-url==2.3.0
 
 # Imágenes
-Pillow==10.4.0
-cloudinary==1.41.0
+Pillow>=10.0,<12.0
+cloudinary>=1.36
 django-cloudinary-storage==0.3.0
 
 # Reportes Excel
-openpyxl==3.1.5
+openpyxl>=3.1
 
-# Reportes PDF (WeasyPrint — sin GTK en Linux, usa versión compatible)
-weasyprint==62.3
+# Reportes PDF
+weasyprint>=60.0
 
 # Geolocalización
-geopy==2.4.1
-
-# IA Gemini
-google-generativeai==0.8.3
+geopy>=2.3
 
 # NTP
-ntplib==0.4.0
+ntplib>=0.4
 
-# Pre-nómina Excel (pandas sin compilación en Linux)
-pandas==2.2.3
-numpy==1.26.4
+# Pre-nómina
+pandas>=2.0,<2.3
+numpy>=1.24,<2.0
 
 # Servidor producción
-gunicorn==23.0.0
-whitenoise==6.9.0
+gunicorn>=21.0
+whitenoise>=6.5
 
 # Utilidades
-requests==2.32.4
+requests>=2.31
 
 # Celery + Redis
-celery==5.4.0
-redis==5.0.8
-django-celery-beat==2.7.0
+celery>=5.3,<6.0
+redis>=5.0,<6.0
+django-celery-beat>=2.6
+
+# IA Gemini (sin fijar versión para evitar conflictos de dependencias)
+google-generativeai>=0.7
