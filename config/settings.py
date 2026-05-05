@@ -34,9 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    # Cloudinary primero
     'cloudinary_storage',
+    'django.contrib.staticfiles',
     'cloudinary',
     # Celery Beat (tareas programadas)
     'django_celery_beat',
@@ -143,7 +142,7 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure     = True,
     )
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/'
+    MEDIA_URL = '/media/'
 else:
     # Desarrollo local sin Cloudinary
     MEDIA_URL = '/media/'
