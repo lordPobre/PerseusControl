@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Feriados Chile · Perseus{% endblock %}
+{% block content %}
+
+<div class="p-page-head">
+  <h1 class="p-page-title">Feriados Chile</h1>
+</div>
+
+<div class="p-grid-2" style="align-items:start">
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Agregar feriado</span></div>
+    <div class="p-card-body">
+      <form method="POST" style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <div class="p-form-group">
+          <label class="p-label">Fecha</label>
+          <input type="date" name="fecha" class="p-input" required>
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Descripción</label>
+          <input type="text" name="descripcion" class="p-input" placeholder="Ej: Día del Trabajador" required>
+        </div>
+        <button type="submit" class="p-btn p-btn-primary">Agregar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Feriados registrados</span>
+      <span class="p-card-count">{{ feriados.count }}</span>
+    </div>
+    <div style="padding:0">
+      <table class="p-table">
+        <thead><tr><th>Fecha</th><th>Descripción</th></tr></thead>
+        <tbody>
+          {% for f in feriados %}
+          <tr>
+            <td class="p-td-mono">{{ f.fecha|date:"d/m/Y" }}</td>
+            <td style="font-size:13px">{{ f.descripcion }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="p-empty">Sin feriados registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

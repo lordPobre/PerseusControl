@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Turnos · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">Gestión de turnos</h1>
+    <p class="p-page-sub">{{ empresa.nombre }}</p>
+  </div>
+  <button class="p-btn p-btn-primary" onclick="abrirModal('modal-turno')">
+    + Nuevo turno
+  </button>
+</div>
+
+<!-- Turnos activos -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Turnos activos</span>
+    <span class="p-card-count">{{ turnos.count }}</span>
+  </div>
+  <table class="p-table">
+    <thead>
+      <tr>
+        <th>Color</th>
+        <th>Nombre</th>
+        <th>Hora inicio</th>
+        <th>Hora fin</th>
+        <th>Duración</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in turnos %}
+      <tr>
+        <td>
+          <div style="width:20px;height:20px;border-radius:50%;background:{{ t.color }};
+            border:0.5px solid var(--p-b2)"></div>
+        </td>
+        <td class="p-td-name">{{ t.nombre }}</td>
+        <td class="p-td-mono">{{ t.hora_inicio|time:"H:i" }}</td>
+        <td class="p-td-mono">{{ t.hora_fin|time:"H:i" }}</td>
+        <td style="font-size:12px;color:var(--p-ink2)">
+          {% comment %}Calcular duración aproximada{% endcomment %}
+          {{ t.hora_inicio|time:"H:i" }} → {{ t.hora_fin|time:"H:i" }}
+        </td>
+        <td>
+          <form method="POST" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="accion"   value="desactivar">
+            <input type="hidden" name="turno_id" value="{{ t.id }}">
+            <button type="submit" class="p-btn"
+              style="font-size:11px;padding:4px 10px;color:var(--p-r)"
+              onclick="return confirm('¿Desactivar turno {{ t.nombre }}?')">
+              Desactivar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="p-empty">
+          Sin turnos activos. Crea el primero con el botón de arriba.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Turnos inactivos -->
+{% if turnos_inactivos %}
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title" style="color:var(--p-ink3)">Turnos inactivos</span>
+    <span class="p-card-count">{{ turnos_inactivos.count }}</span>
+  </div>
+  <table class="p-table">
+    <thead>
+      <tr><th>Color</th><th>Nombre</th><th>Horario</th><th>Acción</th></tr>
+    </thead>
+    <tbody>
+      {% for t in turnos_inactivos %}
+      <tr style="opacity:.6">
+        <td>
+          <div style="width:20px;height:20px;border-radius:50%;background:{{ t.color }};
+            border:0.5px solid var(--p-b2)"></div>
+        </td>
+        <td class="p-td-name">{{ t.nombre }}</td>
+        <td class="p-td-mono" style="font-size:12px">
+          {{ t.hora_inicio|time:"H:i" }} → {{ t.hora_fin|time:"H:i" }}
+        </td>
+        <td>
+          <form method="POST" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="accion"   value="reactivar">
+            <input type="hidden" name="turno_id" value="{{ t.id }}">
+            <button type="submit" class="p-btn p-btn-g"
+              style="font-size:11px;padding:4px 10px">
+              Reactivar
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Modal nuevo turno -->
+<div class="p-modal-overlay" id="modal-turno">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">Nuevo turno</span>
+      <button class="p-modal-close" onclick="cerrarModal('modal-turno')">&times;</button>
+    </div>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="crear">
+      <div class="p-modal-body">
+
+        <div class="p-form-group">
+          <label class="p-label">Nombre del turno</label>
+          <input type="text" name="nombre" class="p-input"
+            placeholder="Ej: Turno Mañana, Turno Noche..." required>
+        </div>
+
+        <div class="p-grid-2">
+          <div class="p-form-group">
+            <label class="p-label">Hora inicio</label>
+            <input type="time" name="hora_inicio" class="p-input" required>
+          </div>
+          <div class="p-form-group">
+            <label class="p-label">Hora fin</label>
+            <input type="time" name="hora_fin" class="p-input" required>
+          </div>
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Color identificador</label>
+          <div class="p-flex p-gap-8" style="flex-wrap:wrap">
+            {% for color, nombre_color in colores %}
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:12px">
+              <input type="radio" name="color" value="{{ color }}"
+                {% if forloop.first %}checked{% endif %}
+                style="display:none" onchange="previewColor('{{ color }}')">
+              <div style="width:24px;height:24px;border-radius:50%;background:{{ color }};
+                border:2px solid transparent;cursor:pointer"
+                onclick="selColor(this, '{{ color }}')"></div>
+              <span style="color:var(--p-ink2)">{{ nombre_color }}</span>
+            </label>
+            {% empty %}
+            <input type="color" name="color" value="#1a6644" class="p-input"
+              style="height:40px;padding:4px;width:60px">
+            {% endfor %}
+          </div>
+          <input type="hidden" name="color" id="color-hidden" value="#1a6644">
+        </div>
+
+      </div>
+      <div class="p-modal-footer">
+        <button type="button" onclick="cerrarModal('modal-turno')" class="p-btn">
+          Cancelar
+        </button>
+        <button type="submit" class="p-btn p-btn-primary">Crear turno</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function selColor(el, color){
+  document.getElementById('color-hidden').value = color;
+  document.querySelectorAll('[onclick^="selColor"]').forEach(d=>{
+    d.style.border = '2px solid transparent';
+  });
+  el.style.border = '2px solid var(--p-ink)';
+}
+
+document.querySelectorAll('.p-modal-overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: sans-serif; font-size: 11px; color: #333; margin: 0; padding: 20px; }
+    h1 { text-align: center; font-size: 16px; margin-bottom: 4px; text-transform: uppercase; }
+    .sub { text-align: center; font-size: 10px; color: #666; margin-bottom: 20px; }
+    .info { width: 100%; border: 1px solid #ccc; border-collapse: collapse; margin-bottom: 20px; }
+    .info td { padding: 6px 10px; border: 1px solid #ddd; }
+    .info .lbl { font-weight: bold; background: #f5f5f5; width: 150px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background: #1a1a1a; color: #fff; padding: 7px 8px; font-size: 10px; text-align: left; }
+    td { border-bottom: 1px solid #eee; padding: 6px 8px; font-size: 10px; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .entrada { color: #1a6644; font-weight: bold; }
+    .salida  { color: #991f1f; font-weight: bold; }
+    .hash    { font-family: monospace; font-size: 8px; color: #888; word-break: break-all; }
+    .firma   { margin-top: 60px; text-align: center; }
+    .firma p { margin: 4px 0; }
+  </style>
+</head>
+<body>
+
+<h1>Libro de Asistencia Digital</h1>
+<div class="sub">Perseus Control · Art. 33 Código del Trabajo Chile</div>
+
+<table class="info">
+  <tr>
+    <td class="lbl">Empresa:</td>
+    <td><strong>{{ empresa.nombre|default:"No registrada" }}</strong></td>
+    <td class="lbl">RUT empresa:</td>
+    <td>{{ empresa.rut|default:"–" }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Dirección:</td>
+    <td>{{ empresa.direccion|default:"–" }}</td>
+    <td class="lbl">Generado el:</td>
+    <td>{{ fecha_generacion|date:"d/m/Y H:i" }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Trabajador:</td>
+    <td><strong>{{ usuario.get_full_name }}</strong></td>
+    <td class="lbl">RUT trabajador:</td>
+    <td>{{ usuario.perfil.rut|default:"–" }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Cargo:</td>
+    <td>{{ usuario.perfil.cargo|default:"–" }}</td>
+    <td class="lbl">Total registros:</td>
+    <td>{{ marcas.count }}</td>
+  </tr>
+</table>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Hora</th>
+      <th>Tipo de marca</th>
+      <th>Ubicación</th>
+      <th>Manual</th>
+      <th>Hash SHA-256</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in marcas %}
+    <tr>
+      <td>{{ m.timestamp|date:"d/m/Y" }}</td>
+      <td>{{ m.timestamp|date:"H:i:s" }}</td>
+      <td>
+        {% if m.tipo == 'ENTRADA' %}<span class="entrada">ENTRADA</span>
+        {% elif m.tipo == 'SALIDA' %}<span class="salida">SALIDA</span>
+        {% else %}{{ m.tipo }}{% endif %}
+      </td>
+      <td>{{ m.direccion|default:"-" }}</td>
+      <td>{% if m.es_manual %}Sí{% else %}No{% endif %}</td>
+      <td class="hash">{{ m.hash_actual }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" style="text-align:center;padding:20px;color:#999">Sin registros de asistencia.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="firma">
+  <p>_______________________________</p>
+  <p><strong>{{ usuario.get_full_name }}</strong></p>
+  <p style="font-size:9px;color:#666">RUT: {{ usuario.perfil.rut|default:"–" }} · Firma conforme</p>
+  <p style="font-size:9px;color:#999;margin-top:12px">
+    Documento generado electrónicamente por Perseus Control.<br>
+    La integridad de los registros está garantizada mediante hash SHA-256 encadenado.
+  </p>
+</div>
+
+</body>
+</html>

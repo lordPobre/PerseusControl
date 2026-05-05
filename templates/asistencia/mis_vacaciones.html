@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Mis Vacaciones · Perseus{% endblock %}
+{% block content %}
+
+<div class="p-page-head">
+  <h1 class="p-page-title">Mis vacaciones</h1>
+</div>
+
+<div class="p-grid-2" style="align-items:start">
+
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Solicitar días libres</span></div>
+    <div class="p-card-body">
+
+      <!-- Saldo real calculado -->
+      <div style="background:var(--p-s2);border-radius:var(--p-r8);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:500;color:var(--p-ink3);text-transform:uppercase;margin-bottom:10px">
+          Saldo vacaciones {% now "Y" %}
+        </div>
+
+        <!-- Barra de progreso -->
+        <div style="height:6px;background:var(--p-s3);border-radius:3px;overflow:hidden;margin-bottom:12px">
+          {% if dias_base > 0 %}
+          <div style="height:100%;border-radius:3px;background:var(--p-gm);
+            width:{% widthratio dias_disponibles dias_base 100 %}%"></div>
+          {% endif %}
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-g)">{{ dias_disponibles }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Disponibles</div>
+          </div>
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-rm)">{{ dias_usados }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Usados</div>
+          </div>
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-am)">{{ dias_pendientes }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Pendientes</div>
+          </div>
+        </div>
+
+        {% if dias_disponibles == 0 %}
+        <div class="p-alert p-alert-a" style="margin-top:12px;font-size:12px">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Has agotado tu saldo de {{ dias_base }} días hábiles para este año.
+        </div>
+        {% elif dias_disponibles <= 3 %}
+        <div class="p-alert p-alert-a" style="margin-top:12px;font-size:12px">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Te quedan solo {{ dias_disponibles }} días hábiles disponibles.
+        </div>
+        {% endif %}
+      </div>
+
+      <form method="POST" style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <div class="p-form-group">
+          <label class="p-label">Desde</label>
+          <input type="date" name="fecha_inicio" class="p-input" required
+            min="{% now 'Y-m-d' %}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Hasta</label>
+          <input type="date" name="fecha_fin" class="p-input" required
+            min="{% now 'Y-m-d' %}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Comentario (opcional)</label>
+          <textarea name="motivo" class="p-input p-textarea"
+            placeholder="Ej: Viaje familiar..."></textarea>
+        </div>
+        {% if dias_disponibles > 0 %}
+        <button type="submit" class="p-btn p-btn-g">Enviar solicitud</button>
+        {% else %}
+        <button type="button" class="p-btn" disabled style="opacity:.45;cursor:not-allowed">
+          Sin saldo disponible
+        </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Mis solicitudes</span>
+      <span class="p-card-count">{{ solicitudes.count }}</span>
+    </div>
+    <div style="padding:0">
+      <table class="p-table">
+        <thead>
+          <tr>
+            <th>Solicitud</th>
+            <th>Fechas</th>
+            <th>Días</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in solicitudes %}
+          <tr>
+            <td class="p-td-mono" style="font-size:11px">
+              {{ v.fecha_solicitud|date:"d/m/Y" }}
+            </td>
+            <td style="font-size:12px">
+              {{ v.inicio|date:"d M" }} → {{ v.fin|date:"d M Y" }}
+            </td>
+            <td style="font-size:13px;font-weight:500;text-align:center">
+              {{ v.dias_habiles }}
+            </td>
+            <td>
+              {% if v.estado == 'APROBADA' %}
+                <span class="p-badge p-g">✓ Aprobada</span>
+              {% elif v.estado == 'RECHAZADA' %}
+                <span class="p-badge p-r">✗ Rechazada</span>
+              {% else %}
+                <span class="p-badge p-a">⏳ Pendiente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="p-empty">Sin solicitudes registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

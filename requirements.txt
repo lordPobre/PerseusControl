@@ -1,0 +1,44 @@
+# Perseus Control v4 — Requirements
+# Python 3.10+ · Windows / Linux / Mac
+# pip install -r requirements.txt
+
+# Core
+Django==5.2.5
+python-decouple==3.8
+
+# Base de datos
+psycopg2-binary==2.9.9
+dj-database-url==2.3.0
+
+# Imágenes
+Pillow==11.3.0
+cloudinary==1.40.0
+django-cloudinary-storage==0.3.0
+
+# Reportes
+openpyxl==3.1.5
+weasyprint==67.0
+
+# Geolocalización
+geopy==2.4.1
+
+# IA
+google-generativeai==0.8.3
+
+# NTP
+ntplib==0.4.0
+
+# Excel / nómina (2.2.3 = wheel precompilado Windows + Py3.13)
+pandas==2.2.3
+
+# Servidor producción
+gunicorn==23.0.0
+whitenoise==6.9.0
+
+# Utilidades
+requests==2.32.4
+
+# Celery + Redis (alertas automáticas)
+celery==5.4.0
+redis==5.0.8
+django-celery-beat==2.7.0

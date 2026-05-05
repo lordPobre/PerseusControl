@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Cambiar contraseña · Perseus{% endblock %}
+
+{% block content %}
+<div style="max-width:440px;margin:0 auto">
+
+  <div class="p-page-head">
+    <div>
+      <h1 class="p-page-title">Seguridad requerida</h1>
+      <p class="p-page-sub">Establece tu contraseña personal antes de continuar</p>
+    </div>
+  </div>
+
+  <div class="p-alert p-alert-a" style="margin-bottom:20px">
+    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Por seguridad debes cambiar la contraseña provisional antes de usar el sistema.
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-body">
+      <form method="post" style="display:flex;flex-direction:column;gap:14px">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="p-form-group">
+          <label class="p-label">{{ field.label }}</label>
+          <input type="password" name="{{ field.html_name }}" class="p-input"
+            {% if field.field.required %}required{% endif %}>
+          {% if field.help_text %}
+            <small style="font-size:11px;color:var(--p-ink3)">{{ field.help_text }}</small>
+          {% endif %}
+          {% if field.errors %}
+            <small style="font-size:11px;color:var(--p-r)">{{ field.errors|join:", " }}</small>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="p-btn p-btn-primary" style="margin-top:4px">
+          Guardar contraseña
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

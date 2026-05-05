@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>{% block title %}Perseus Control{% endblock %}</title>
+  <link rel="manifest" href="/manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/perseus.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+{% if user.is_authenticated %}
+
+<!-- ════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════ -->
+<nav class="p-nav-bar">
+  <a href="{% url 'dashboard' %}" class="p-brand">
+    <div class="p-brand-mark">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+    </div>
+    <div>
+      <div class="p-brand-name">Perseus</div>
+      <div class="p-brand-sub">
+        {% if empresa_activa %}{{ empresa_activa.nombre }}{% else %}Control v4{% endif %}
+      </div>
+    </div>
+  </a>
+
+  <div class="p-nav-spacer"></div>
+
+  <div class="p-clock" id="p-clock">--:--:--</div>
+
+  <!-- Notificaciones -->
+  {% if solicitudes_pendientes_count %}
+  <a href="{% url 'dashboard' %}" class="p-icon-btn" title="{{ solicitudes_pendientes_count }} solicitudes pendientes">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <div class="p-notif-dot"></div>
+  </a>
+  {% else %}
+  <div class="p-icon-btn">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+  </div>
+  {% endif %}
+
+  <!-- Dark mode -->
+  <button id="p-dark-btn" class="p-icon-btn" title="Cambiar tema" style="border:none">
+    <svg id="p-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"/></svg>
+    <svg id="p-sun" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+  </button>
+
+  <!-- Menú usuario -->
+  <div class="p-dropdown" id="p-user-menu">
+
+    <!-- Avatar: logo empresa o iniciales -->
+    <div class="p-avatar" onclick="document.getElementById('p-user-menu').classList.toggle('open')"
+      style="overflow:hidden;padding:0">
+      {% if empresa_activa and empresa_activa.logo %}
+        <img src="{{ empresa_activa.logo.url }}"
+          style="width:100%;height:100%;object-fit:cover;border-radius:50%"
+          alt="{{ empresa_activa.nombre }}">
+      {% else %}
+        <span style="font-size:11px;font-weight:500">
+          {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="p-dropdown-menu">
+      <!-- Info usuario -->
+      <div style="padding:10px 12px;border-bottom:0.5px solid var(--p-b)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <!-- Mini avatar con logo en dropdown también -->
+          <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;
+            background:var(--p-s3);border:0.5px solid var(--p-b2);
+            display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500">
+            {% if empresa_activa and empresa_activa.logo %}
+              <img src="{{ empresa_activa.logo.url }}" style="width:100%;height:100%;object-fit:cover">
+            {% else %}
+              {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+            {% endif %}
+          </div>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--p-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ user.get_full_name }}
+            </div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:1px">
+              {{ perfil_usuario.cargo|default:"Sin cargo" }}
+              {% if perfil_usuario.rol %} · {{ perfil_usuario.get_rol_display }}{% endif %}
+            </div>
+            {% if empresa_activa %}
+            <div style="font-size:10px;color:var(--p-ink3)">{{ empresa_activa.nombre }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <a href="{% url 'perfil' %}" class="p-dropdown-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Mi perfil
+      </a>
+      <a href="{% url 'privacidad' %}" class="p-dropdown-item">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Privacidad
+      </a>
+      <a href="{% url 'ayuda' %}" class="p-dropdown-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        Ayuda
+      </a>
+      <div class="p-dropdown-divider"></div>
+      <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="p-dropdown-item danger">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     SHELL
+════════════════════════════════════════ -->
+<div class="p-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="p-rail">
+
+    <!-- TRABAJADOR (todos lo ven) -->
+    <div class="p-rail-section">Mi espacio</div>
+
+    <a href="{% url 'dashboard' %}" class="p-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+
+    <a href="{% url 'mis_marcas' %}" class="p-nav-link {% if request.resolver_match.url_name == 'mis_marcas' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Mis marcas
+    </a>
+
+    <a href="{% url 'ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/></svg>
+      Mis ausencias
+    </a>
+
+    <a href="{% url 'mi_pdf' %}" class="p-nav-link">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Mi comprobante
+    </a>
+
+    <a href="{% url 'perfil' %}" class="p-nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Mi perfil
+    </a>
+
+    <!-- EMPLEADOR / RRHH -->
+    {% if perfil_usuario.es_empleador or user.is_superuser %}
+    <div class="p-rail-section">Gestión empresa</div>
+
+    <a href="{% url 'panel_empresa' %}" class="p-nav-link {% if request.resolver_match.url_name == 'panel_empresa' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+      Panel empresa
+    </a>
+
+    <a href="{% url 'panel_rrhh' %}" class="p-nav-link {% if request.resolver_match.url_name == 'panel_rrhh' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Panel RRHH
+    </a>
+
+    <a href="{% url 'gestionar_ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'gestionar_ausencias' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Ausencias
+    </a>
+
+    <a href="{% url 'turnos' %}" class="p-nav-link {% if request.resolver_match.url_name == 'turnos' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      Turnos
+    </a>
+
+    <a href="{% url 'exportar_excel' %}" class="p-nav-link">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      Reportes RRHH
+    </a>
+    {% endif %}
+
+    <!-- FISCALIZADOR DT -->
+    {% if perfil_usuario.es_fiscalizador %}
+    <div class="p-rail-section">Auditoría DT</div>
+
+    <a href="{% url 'panel_fiscalizador' %}" class="p-nav-link {% if request.resolver_match.url_name == 'panel_fiscalizador' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Panel DT
+    </a>
+
+    <a href="{% url 'exportar_fiscalizacion' %}" class="p-nav-link">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Reporte DT Excel
+    </a>
+    {% endif %}
+
+    <!-- SUPERADMIN -->
+    {% if user.is_superuser %}
+    <div class="p-rail-section">Administración</div>
+
+    <a href="{% url 'importar_nomina' %}" class="p-nav-link {% if request.resolver_match.url_name == 'importar_nomina' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Importar nómina
+    </a>
+
+    <a href="{% url 'cargar_feriados' %}" class="p-nav-link {% if request.resolver_match.url_name == 'cargar_feriados' %}active{% endif %}">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Feriados Chile
+    </a>
+
+    <a href="/admin/" target="_blank" class="p-nav-link">
+      <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      Django Admin
+    </a>
+    {% endif %}
+
+    <!-- Usuario en el pie del sidebar -->
+    <div class="p-rail-bottom">
+      <div class="p-flex p-gap-8" style="padding:8px 6px">
+        <div class="p-avatar" style="width:28px;height:28px;font-size:10px;cursor:default">
+          {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:500;color:var(--p-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {{ user.first_name }} {{ user.last_name|slice:":1" }}.
+          </div>
+          <div style="font-size:10px;color:var(--p-ink3)">
+            {% if perfil_usuario %}{{ perfil_usuario.get_rol_display }}{% else %}Usuario{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── CONTENIDO ── -->
+  <main class="p-content" id="p-main">
+
+    <!-- Mensajes del sistema -->
+    {% if messages %}
+      {% for msg in messages %}
+      <div class="p-alert
+        {% if msg.tags == 'success' %}p-alert-g
+        {% elif msg.tags == 'error' or msg.tags == 'danger' %}p-alert-r
+        {% elif msg.tags == 'warning' %}p-alert-a
+        {% else %}p-alert-b{% endif %}"
+        role="alert">
+        <svg viewBox="0 0 24 24">
+          {% if msg.tags == 'success' %}<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
+          {% elif msg.tags == 'error' or msg.tags == 'danger' %}<circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
+          {% elif msg.tags == 'warning' %}<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/>
+          {% else %}<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>{% endif %}
+        </svg>
+        <span style="flex:1">{{ msg }}</span>
+        <button onclick="this.parentElement.remove()"
+          style="background:none;border:none;color:inherit;cursor:pointer;font-size:18px;opacity:.6;line-height:1">&times;</button>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+  </main>
+
+</div><!-- end p-shell -->
+
+{% else %}
+  {% block content_unauth %}{% endblock %}
+{% endif %}
+
+{% if user.is_authenticated %}
+<!-- Navbar inferior para móvil -->
+<nav class="p-mobile-nav">
+  <a href="{% url 'dashboard' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Inicio
+  </a>
+  <a href="{% url 'mis_marcas' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'mis_marcas' %}active{% endif %}">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Marcas
+  </a>
+  <a href="{% url 'ausencias' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Ausencias
+  </a>
+  {% if perfil_usuario.es_empleador or user.is_superuser %}
+  <a href="{% url 'panel_rrhh' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'panel_rrhh' %}active{% endif %}">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    RRHH
+  </a>
+  {% endif %}
+  <a href="{% url 'perfil' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    Perfil
+  </a>
+</nav>
+{% endif %}
+
+<!-- Scripts globales -->
+<script>
+/* ── Reloj ── */
+(function(){
+  const el = document.getElementById('p-clock');
+  if(!el) return;
+  function tick(){
+    const n=new Date(), p=n=>String(n).padStart(2,'0');
+    el.textContent=p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+  }
+  tick(); setInterval(tick,1000);
+})();
+
+/* ── Dark mode ── */
+(function(){
+  const body=document.body;
+  const btn=document.getElementById('p-dark-btn');
+  const moon=document.getElementById('p-moon');
+  const sun=document.getElementById('p-sun');
+  function apply(dark){
+    body.classList.toggle('dark',dark);
+    if(moon) moon.style.display = dark?'none':'';
+    if(sun)  sun.style.display  = dark?'':'none';
+  }
+  apply(localStorage.getItem('p-theme')==='dark');
+  if(btn) btn.addEventListener('click',function(){
+    const dark=!body.classList.contains('dark');
+    apply(dark);
+    localStorage.setItem('p-theme', dark?'dark':'light');
+  });
+})();
+
+/* ── Cerrar dropdown al hacer click afuera ── */
+document.addEventListener('click', function(e){
+  const menu = document.getElementById('p-user-menu');
+  if(menu && !menu.contains(e.target)) menu.classList.remove('open');
+});
+
+/* ── Service Worker ── */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+/* ── Función global getCsrf ── */
+function getCsrf(){
+  const c=document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='));
+  return c?c.split('=')[1].trim():'';
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

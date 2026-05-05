@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Panel DT · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">Auditoría DT</h1>
+    <p class="p-page-sub">{{ empresa.nombre|upper }} · RUT {{ empresa.rut|default:"no registrado" }}</p>
+  </div>
+  <form method="GET" class="p-flex p-gap-8" style="flex-wrap:wrap">
+    <input type="date" name="desde" value="{{ desde }}" class="p-input" style="width:auto;padding:5px 10px;font-size:12px">
+    <input type="date" name="hasta" value="{{ hasta }}" class="p-input" style="width:auto;padding:5px 10px;font-size:12px">
+    <button type="submit" class="p-btn p-btn-primary">Filtrar</button>
+    <a href="{% url 'exportar_fiscalizacion' %}{% if desde %}?desde={{ desde }}&hasta={{ hasta }}{% endif %}" class="p-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Excel DT
+    </a>
+  </form>
+</div>
+
+<div class="p-kpis">
+  <div class="p-kpi">
+    <div class="p-kpi-val">{{ jornadas|length }}</div>
+    <div class="p-kpi-lbl">Jornadas en el período</div>
+  </div>
+</div>
+
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Registro de jornadas — Art. 33 CT</span>
+    <span class="p-card-count">{{ jornadas|length }} registros</span>
+  </div>
+  <div style="overflow-x:auto"><table class="p-table">
+    <thead>
+      <tr>
+        <th>Trabajador</th>
+        <th>Fecha</th>
+        <th>Entrada</th>
+        <th>Salida</th>
+        <th>Duración</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for j in jornadas %}
+      <tr>
+        <td>
+          <div class="p-td-name">{{ j.trabajador.get_full_name }}</div>
+          <div class="p-td-sub">{{ j.trabajador.perfil.rut|default:"S/I" }}</div>
+        </td>
+        <td class="p-td-mono">{{ j.fecha|date:"d/m/Y" }}</td>
+        <td>
+          {% if j.entrada %}
+            <span style="font-weight:500;color:var(--p-gm);font-variant-numeric:tabular-nums">{{ j.entrada|date:"H:i" }}</span>
+          {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}
+        </td>
+        <td>
+          {% if j.salida %}
+            <span style="font-weight:500;color:var(--p-rm);font-variant-numeric:tabular-nums">{{ j.salida|date:"H:i" }}</span>
+          {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}
+        </td>
+        <td class="p-td-mono">{{ j.duracion }}</td>
+        <td>
+          {% if j.estado == 'success' %}<span class="p-badge p-g">Completa</span>
+          {% elif j.estado == 'info' %}<span class="p-badge p-b">En curso</span>
+          {% elif j.estado == 'warning' %}<span class="p-badge p-a">Incompleta</span>
+          {% else %}<span class="p-badge p-r">Error</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="p-empty">Sin registros en el rango seleccionado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

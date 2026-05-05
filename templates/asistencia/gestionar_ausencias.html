@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Gestión Ausencias · Perseus{% endblock %}
+{% block content %}
+
+<div class="p-page-head">
+  <h1 class="p-page-title">Gestión de ausencias</h1>
+  <div class="p-flex p-gap-8">
+    <button class="p-btn p-btn-g" onclick="abrirModal('modal-vac')">+ Vacaciones</button>
+    <button class="p-btn p-btn-r" onclick="abrirModal('modal-lic')">+ Licencia</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:2px;background:var(--p-s3);border-radius:var(--p-r8);padding:3px;width:fit-content">
+  <button onclick="showTab('tab-vac',this)" id="btn-tab-vac"
+    style="padding:6px 16px;border-radius:6px;border:none;font-size:12px;font-weight:500;background:var(--p-s);color:var(--p-ink);cursor:pointer">
+    Vacaciones ({{ vacaciones.count }})
+  </button>
+  <button onclick="showTab('tab-lic',this)" id="btn-tab-lic"
+    style="padding:6px 16px;border-radius:6px;border:none;font-size:12px;color:var(--p-ink2);cursor:pointer;background:transparent">
+    Licencias ({{ licencias.count }})
+  </button>
+</div>
+
+<!-- Tab Vacaciones -->
+<div id="tab-vac" class="p-card">
+  <table class="p-table">
+    <thead><tr><th>Trabajador</th><th>Desde → Hasta</th><th>Días hábiles</th><th>Estado</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for v in vacaciones %}
+      <tr>
+        <td>
+          <div class="p-td-name">{{ v.trabajador.get_full_name }}</div>
+          <div class="p-td-sub">{{ v.trabajador.perfil.rut|default:"S/I" }}</div>
+        </td>
+        <td style="font-size:12px">{{ v.inicio|date:"d M" }} → {{ v.fin|date:"d M Y" }}</td>
+        <td style="text-align:center;font-weight:500">{{ v.dias_habiles }}</td>
+        <td>
+          {% if v.estado == 'APROBADA' %}<span class="p-badge p-g">Aprobada</span>
+          {% elif v.estado == 'RECHAZADA' %}<span class="p-badge p-r">Rechazada</span>
+          {% else %}<span class="p-badge p-a">Pendiente</span>{% endif %}
+        </td>
+        <td>
+          {% if v.estado == 'PENDIENTE' %}
+          <div class="p-flex p-gap-8">
+            <a href="{% url 'aprobar_vacacion' v.id 'APROBADA' %}" class="p-ia p-ia-ok">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </a>
+            <a href="{% url 'aprobar_vacacion' v.id 'RECHAZADA' %}" class="p-ia p-ia-no"
+              onclick="return confirm('¿Rechazar?')">
+              <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </a>
+          </div>
+          {% else %}<span style="font-size:11px;color:var(--p-ink3)">Gestionada</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}<tr><td colspan="5" class="p-empty">Sin registros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Tab Licencias -->
+<div id="tab-lic" class="p-card" style="display:none">
+  <table class="p-table">
+    <thead>
+      <tr>
+        <th>Trabajador</th><th>Tipo</th><th>Desde → Hasta</th>
+        <th>Folio</th><th>Estado</th><th>Doc.</th><th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in licencias %}
+      <tr>
+        <td>
+          <div class="p-td-name">{{ l.trabajador.get_full_name }}</div>
+          <div class="p-td-sub">{{ l.trabajador.perfil.rut|default:"S/I" }}</div>
+        </td>
+        <td><span class="p-badge p-b">{{ l.get_tipo_display }}</span></td>
+        <td style="font-size:12px">{{ l.inicio|date:"d M" }} → {{ l.fin|date:"d M Y" }}</td>
+        <td style="font-size:11px;color:var(--p-ink3)">{{ l.folio|default:"–" }}</td>
+        <td>
+          {% if l.estado == 'APROBADA' %}<span class="p-badge p-g">✓ Aprobada</span>
+          {% elif l.estado == 'RECHAZADA' %}<span class="p-badge p-r">✗ Rechazada</span>
+          {% else %}<span class="p-badge p-a">⏳ Pendiente</span>{% endif %}
+        </td>
+        <td>
+          {% if l.documento %}
+          <a href="{{ l.documento.url }}" target="_blank"
+            class="p-btn" style="font-size:10px;padding:3px 8px">Ver PDF</a>
+          {% else %}<span style="color:var(--p-ink3);font-size:11px">Sin doc.</span>{% endif %}
+        </td>
+        <td>
+          {% if l.estado == 'PENDIENTE' %}
+          <div class="p-flex p-gap-8">
+            <a href="{% url 'aprobar_licencia' l.id 'APROBADA' %}" class="p-ia p-ia-ok" title="Aprobar">
+              <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </a>
+            <a href="{% url 'aprobar_licencia' l.id 'RECHAZADA' %}" class="p-ia p-ia-no"
+              title="Rechazar" onclick="return confirm('¿Rechazar esta licencia?')">
+              <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </a>
+          </div>
+          {% else %}
+          <span style="font-size:11px;color:var(--p-ink3)">Gestionada</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="p-empty">Sin licencias registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Vacaciones -->
+<div class="p-modal-overlay" id="modal-vac">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">Registrar vacaciones</span>
+      <button class="p-modal-close" onclick="this.closest('.p-modal-overlay').classList.remove('open')">&times;</button>
+    </div>
+    <form method="POST">{% csrf_token %}
+      <div class="p-modal-body">
+        {{ form_vacacion.as_p }}
+      </div>
+      <div class="p-modal-footer">
+        <button type="button" onclick="this.closest('.p-modal-overlay').classList.remove('open')" class="p-btn">Cancelar</button>
+        <button type="submit" name="btn_vacacion" class="p-btn p-btn-g">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Licencia -->
+<div class="p-modal-overlay" id="modal-lic">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">Registrar licencia médica</span>
+      <button class="p-modal-close" onclick="this.closest('.p-modal-overlay').classList.remove('open')">&times;</button>
+    </div>
+    <form method="POST" enctype="multipart/form-data">{% csrf_token %}
+      <div class="p-modal-body">
+        {{ form_licencia.as_p }}
+      </div>
+      <div class="p-modal-footer">
+        <button type="button" onclick="this.closest('.p-modal-overlay').classList.remove('open')" class="p-btn">Cancelar</button>
+        <button type="submit" name="btn_licencia" class="p-btn p-btn-r">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+function showTab(id,btn){
+  ['tab-vac','tab-lic'].forEach(t=>document.getElementById(t).style.display='none');
+  document.getElementById(id).style.display='block';
+  document.querySelectorAll('[onclick^="showTab"]').forEach(b=>{
+    b.style.background='transparent'; b.style.color='var(--p-ink2)';
+  });
+  btn.style.background='var(--p-s)'; btn.style.color='var(--p-ink)';
+}
+document.querySelectorAll('.p-modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+</script>
+{% endblock %}
