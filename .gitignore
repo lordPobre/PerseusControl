@@ -40,3 +40,4 @@ htmlcov/
 # Producción
 *.pem
 *.key
+nixpacks.toml

@@ -21,10 +21,10 @@ if os.name == 'nt':
             pass
 
 # ── Seguridad ─────────────────────────────────────────────────
-SECRET_KEY    = config('SECRET_KEY')
+SECRET_KEY    = config('SECRET_KEY', default='django-insecure-build-placeholder-key-not-for-production')
 DEBUG         = config('DEBUG', default=False, cast=bool)
 ENVIRONMENT   = config('ENVIRONMENT', default='production')
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
 # ── Apps ──────────────────────────────────────────────────────
