@@ -130,9 +130,15 @@ CLOUDINARY_STORAGE = {
     'API_KEY':    config('CLOUDINARY_API_KEY',    default=''),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
 }
-# Solo usar Cloudinary si las credenciales están configuradas
+
+# Usar Cloudinary si las credenciales están configuradas
+# En producción SIEMPRE debe estar configurado
 if all(CLOUDINARY_STORAGE.values()):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = 'https://res.cloudinary.com/{}/'.format(CLOUDINARY_STORAGE['CLOUD_NAME'])
+else:
+    # Solo en desarrollo local sin Cloudinary
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # ── Autenticación ─────────────────────────────────────────────
 LOGIN_URL           = 'login'
