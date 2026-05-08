@@ -1,15 +1,10 @@
 FROM python:3.11-slim
 
-# Dependencias del sistema para WeasyPrint y psycopg2
+# Dependencias del sistema
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     libffi-dev \
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf-xlib-2.0-0 \
-    shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

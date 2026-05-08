@@ -343,10 +343,8 @@ def exportar_remuneraciones(request):
 @login_required
 def generar_pdf_trabajador(request):
     """PDF de libro de asistencia personal."""
-    try:
-        from weasyprint import HTML
-    except ImportError:
-        return HttpResponse('WeasyPrint no instalado. Instala GTK3 en Windows.', status=500)
+    from io import BytesIO
+    from xhtml2pdf import pisa
 
     marcas  = Marcacion.objects.filter(trabajador=request.user).order_by('timestamp')
     empresa = getattr(getattr(request.user, 'perfil', None), 'empresa', None)
@@ -358,7 +356,14 @@ def generar_pdf_trabajador(request):
         'fecha_generacion': timezone.localtime(timezone.now()),
     }
     html_string = render_to_string('reportes/libro_asistencia.html', ctx)
-    resp = HttpResponse(content_type='application/pdf')
+
+    buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+
+    if pisa_status.err:
+        return HttpResponse('Error generando PDF', status=500)
+
+    buffer.seek(0)
+    resp = HttpResponse(buffer, content_type='application/pdf')
     resp['Content-Disposition'] = f'attachment; filename="asistencia_{request.user.username}.pdf"'
-    HTML(string=html_string).write_pdf(resp)
     return resp

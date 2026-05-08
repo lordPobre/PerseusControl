@@ -16,8 +16,9 @@ django-cloudinary-storage==0.3.0
 # Reportes Excel
 openpyxl>=3.1
 
-# Reportes PDF
-weasyprint>=60.0
+# Reportes PDF (comentado en Railway — usar xhtml2pdf que no requiere GTK)
+# weasyprint>=60.0
+xhtml2pdf==0.2.13
 
 # Geolocalización
 geopy>=2.3
