@@ -342,28 +342,110 @@ def exportar_remuneraciones(request):
 
 @login_required
 def generar_pdf_trabajador(request):
-    """PDF de libro de asistencia personal."""
+    """PDF de libro de asistencia personal usando ReportLab."""
     from io import BytesIO
-    from xhtml2pdf import pisa
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-    marcas  = Marcacion.objects.filter(trabajador=request.user).order_by('timestamp')
-    empresa = getattr(getattr(request.user, 'perfil', None), 'empresa', None)
-
-    ctx = {
-        'marcas':           marcas,
-        'usuario':          request.user,
-        'empresa':          empresa,
-        'fecha_generacion': timezone.localtime(timezone.now()),
-    }
-    html_string = render_to_string('reportes/libro_asistencia.html', ctx)
+    user    = request.user
+    marcas  = Marcacion.objects.filter(trabajador=user).order_by('timestamp')
+    empresa = getattr(getattr(user, 'perfil', None), 'empresa', None)
+    perfil  = getattr(user, 'perfil', None)
 
     buffer = BytesIO()
-    pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+    doc    = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=1.5*cm, leftMargin=1.5*cm,
+        topMargin=1.5*cm,   bottomMargin=1.5*cm,
+    )
 
-    if pisa_status.err:
-        return HttpResponse('Error generando PDF', status=500)
+    styles  = getSampleStyleSheet()
+    story   = []
 
+    # Título
+    titulo_style = ParagraphStyle(
+        'titulo', parent=styles['Title'],
+        fontSize=14, spaceAfter=6, alignment=TA_CENTER,
+    )
+    sub_style = ParagraphStyle(
+        'sub', parent=styles['Normal'],
+        fontSize=9, spaceAfter=4, alignment=TA_CENTER, textColor=colors.grey,
+    )
+
+    story.append(Paragraph('LIBRO DE ASISTENCIA DIGITAL', titulo_style))
+    story.append(Paragraph(
+        f'{empresa.nombre if empresa else ""} · Art. 33 Código del Trabajo Chile',
+        sub_style
+    ))
+    story.append(Spacer(1, 0.3*cm))
+
+    # Info del trabajador
+    info_data = [
+        ['Trabajador:', user.get_full_name(), 'RUT:', perfil.rut if perfil else '–'],
+        ['Empresa:', empresa.nombre if empresa else '–', 'Cargo:', perfil.cargo if perfil else '–'],
+        ['Generado:', timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M'), 'Total registros:', str(marcas.count())],
+    ]
+    info_table = Table(info_data, colWidths=[3*cm, 7*cm, 3*cm, 7*cm])
+    info_table.setStyle(TableStyle([
+        ('FONTSIZE',    (0,0), (-1,-1), 8),
+        ('FONTNAME',    (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTNAME',    (2,0), (2,-1), 'Helvetica-Bold'),
+        ('TEXTCOLOR',   (0,0), (0,-1), colors.grey),
+        ('TEXTCOLOR',   (2,0), (2,-1), colors.grey),
+        ('BOTTOMPADDING',(0,0),(-1,-1), 3),
+        ('TOPPADDING',  (0,0),(-1,-1), 3),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.4*cm))
+
+    # Tabla de marcaciones
+    headers = ['Fecha', 'Hora', 'Tipo', 'Ubicación', 'Manual', 'Hash SHA-256']
+    data    = [headers]
+
+    tipo_labels = {
+        'ENTRADA': 'Entrada', 'SALIDA': 'Salida',
+        'INICIO_COLACION': 'Ini. Colación', 'FIN_COLACION': 'Fin Colación',
+    }
+
+    for m in marcas:
+        fl = timezone.localtime(m.timestamp)
+        data.append([
+            fl.strftime('%d/%m/%Y'),
+            fl.strftime('%H:%M:%S'),
+            tipo_labels.get(m.tipo, m.tipo),
+            (m.direccion or '–')[:50],
+            'Sí' if m.es_manual else 'No',
+            m.hash_actual[:32] + '...' if m.hash_actual else '–',
+        ])
+
+    col_widths = [2.5*cm, 2.2*cm, 3*cm, 8*cm, 1.5*cm, 8*cm]
+    tabla = Table(data, colWidths=col_widths, repeatRows=1)
+    tabla.setStyle(TableStyle([
+        # Header
+        ('BACKGROUND',   (0,0), (-1,0), colors.HexColor('#1a1a1a')),
+        ('TEXTCOLOR',    (0,0), (-1,0), colors.white),
+        ('FONTNAME',     (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE',     (0,0), (-1,0), 8),
+        ('ALIGN',        (0,0), (-1,0), 'CENTER'),
+        # Datos
+        ('FONTSIZE',     (0,1), (-1,-1), 7),
+        ('FONTNAME',     (0,1), (-1,-1), 'Helvetica'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1), [colors.white, colors.HexColor('#f7f7f5')]),
+        ('GRID',         (0,0), (-1,-1), 0.25, colors.HexColor('#e0e0e0')),
+        ('TOPPADDING',   (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING',(0,0), (-1,-1), 3),
+        ('LEFTPADDING',  (0,0), (-1,-1), 4),
+    ]))
+    story.append(tabla)
+
+    doc.build(story)
     buffer.seek(0)
+
     resp = HttpResponse(buffer, content_type='application/pdf')
-    resp['Content-Disposition'] = f'attachment; filename="asistencia_{request.user.username}.pdf"'
+    resp['Content-Disposition'] = f'attachment; filename="asistencia_{user.username}.pdf"'
     return resp
