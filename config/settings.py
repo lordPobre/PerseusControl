@@ -35,9 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
-    # Celery Beat (tareas programadas)
+    # Celery Beat
     'django_celery_beat',
     # App principal
     'apps.asistencia',
@@ -119,10 +117,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # WhiteNoise comprime y cachea estáticos en producción
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ── Archivos de media ─────────────────────────────────────────
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# ── Cloudinary ────────────────────────────────────────────────
+# ── Almacenamiento de archivos ────────────────────────────────
 CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
 CLOUDINARY_API_KEY    = config('CLOUDINARY_API_KEY',    default='')
 CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
@@ -141,11 +136,10 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         api_secret = CLOUDINARY_API_SECRET,
         secure     = True,
     )
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'
-else:
-    # Desarrollo local sin Cloudinary
-    MEDIA_URL = '/media/'
+
+# Media — siempre local, las imágenes se suben manualmente via SDK
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # ── Autenticación ─────────────────────────────────────────────
 LOGIN_URL           = 'login'

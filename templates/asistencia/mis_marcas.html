@@ -74,9 +74,9 @@
             {% else %}<span style="color:var(--p-ink3);font-size:11px">Sin GPS</span>{% endif %}
           </td>
           <td>
-            {% if m.foto %}
+            {% if m.foto_url or m.foto %}
             <a href="{{ m.foto.url }}" target="_blank">
-              <img src="{{ m.foto.url }}"
+              <img src="{{ m.foto_url|default:m.foto.url }}"
                 style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:0.5px solid var(--p-b2)">
             </a>
             {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}

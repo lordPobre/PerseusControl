@@ -252,6 +252,11 @@ class Marcacion(models.Model):
         null=True, blank=True,
         verbose_name="Foto de verificación"
     )
+    foto_url = models.URLField(
+        max_length=500,
+        blank=True, null=True,
+        verbose_name="URL foto Cloudinary"
+    )
 
     # Metadatos técnicos
     ip_address        = models.GenericIPAddressField(null=True, blank=True)

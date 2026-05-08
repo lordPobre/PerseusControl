@@ -1,4 +1,4 @@
-# Perseus Control v4 — Requirements Railway/Render compatible
+# Perseus Control v4 — Requirements Railway compatible
 
 # Core Django
 Django>=5.1,<5.3
@@ -10,8 +10,9 @@ dj-database-url==2.3.0
 
 # Imágenes
 Pillow>=10.0,<12.0
+
+# Cloudinary SDK (subida directa sin django-cloudinary-storage)
 cloudinary>=1.36
-django-cloudinary-storage==0.3.0
 
 # Reportes Excel
 openpyxl>=3.1
@@ -41,5 +42,5 @@ celery>=5.3,<6.0
 redis>=5.0,<6.0
 django-celery-beat>=2.6
 
-# IA Gemini (sin fijar versión para evitar conflictos de dependencias)
+# IA Gemini
 google-generativeai>=0.7

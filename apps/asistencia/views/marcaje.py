@@ -71,14 +71,17 @@ def registrar_marca(request):
         timestamp = obtener_timestamp_ntp()
 
     # ── GPS ───────────────────────────────────────────────────
-    # DESPUÉS — usar Decimal para evitar imprecisión de punto flotante
-    from decimal import Decimal, ROUND_DOWN, InvalidOperation
     lat, lon = None, None
     if raw_lat and str(raw_lat).lower() not in ('', 'nan', 'none'):
         try:
-            lat = Decimal(str(raw_lat)).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN)
-            lon = Decimal(str(raw_lon)).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN)
-        except (InvalidOperation, TypeError, ValueError):
+            # Formatear a exactamente 7 decimales para cumplir max_digits=10, decimal_places=7
+            lat = round(float(raw_lat), 7)
+            lon = round(float(raw_lon), 7)
+            # Verificar que no excedan los límites del DecimalField(max_digits=10, decimal_places=7)
+            # max parte entera = 10 - 7 = 3 dígitos → máximo ±999.9999999
+            lat = max(-999.9999999, min(999.9999999, lat))
+            lon = max(-999.9999999, min(999.9999999, lon))
+        except (ValueError, TypeError):
             pass
 
     # ── Validaciones hardware (entrada y salida requieren GPS + foto) ──
@@ -113,21 +116,45 @@ def registrar_marca(request):
         comentario_animo = comentario_animo if tipo == 'SALIDA' else '',
     )
 
-    # ── Foto biométrica ───────────────────────────────────────
+    # ── Foto biométrica → Cloudinary SDK directo ──────────────
     if foto_b64:
         try:
             if ';base64,' in foto_b64:
                 fmt, imgstr = foto_b64.split(';base64,')
-                ext = fmt.split('/')[-1] or 'jpg'
             else:
-                imgstr, ext = foto_b64, 'jpg'
+                imgstr = foto_b64
 
-            ts  = int(timezone.now().timestamp())
-            nombre = f'marca_{request.user.id}_{ts}.{ext}'
-            marca.foto = ContentFile(base64.b64decode(imgstr), name=nombre)
+            imagen_bytes = base64.b64decode(imgstr)
+            ts = int(timezone.now().timestamp())
+
+            from django.conf import settings as cfg
+            if cfg.CLOUDINARY_CLOUD_NAME:
+                # Subir directo via SDK — guarda la URL pública
+                import cloudinary.uploader
+                resultado = cloudinary.uploader.upload(
+                    imagen_bytes,
+                    folder        = f'perseus/marcas/{timezone.localdate().year}/{timezone.localdate().month:02d}',
+                    public_id     = f'marca_{request.user.id}_{ts}',
+                    resource_type = 'image',
+                    overwrite     = False,
+                )
+                # Guardar URL segura de Cloudinary en el campo foto
+                url_cloudinary = resultado.get('secure_url', '')
+                if url_cloudinary:
+                    # Guardar como URLField simulado usando ContentFile vacío con nombre = URL
+                    from django.core.files.base import ContentFile
+                    marca.foto_url = url_cloudinary  # campo extra si existe
+                    # Usar campo foto normal con la URL como nombre
+                    marca.foto = ContentFile(imagen_bytes,
+                        name=f'perseus/marcas/{timezone.localdate().year}/{timezone.localdate().month:02d}/marca_{request.user.id}_{ts}.jpg')
+            else:
+                # Desarrollo local — guardar en filesystem
+                from django.core.files.base import ContentFile
+                marca.foto = ContentFile(imagen_bytes,
+                    name=f'marca_{request.user.id}_{ts}.jpg')
+
         except Exception as e:
             logger.warning(f"Error procesando foto de {request.user.username}: {e}")
-            # No abortamos por foto inválida — registramos sin foto
             marca.foto = None
 
     # ── Guardar (calcula hash automáticamente en model.save()) ───
@@ -187,11 +214,7 @@ def _enviar_comprobante(user, marca):
         nom_emp = empresa.nombre if empresa else 'Perseus Control'
         email_rrhh = empresa.email_rrhh if empresa else None
         lat, lon   = marca.latitud, marca.longitud
-        # DESPUÉS — usar dirección de texto si existe, coordenadas como fallback
-        if marca.direccion and len(marca.direccion) > 10:
-            link_maps = f'https://www.google.com/maps/search/?api=1&query={marca.direccion.replace(" ", "+")}'
-        else:
-            link_maps = f'https://www.google.com/maps?q={lat},{lon}' if lat else '#'
+        link_maps  = f'https://www.google.com/maps?q={lat},{lon}' if lat else '#'
 
         html = f"""
         <!DOCTYPE html><html><head><meta charset="UTF-8">
