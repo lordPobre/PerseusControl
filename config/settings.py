@@ -136,10 +136,12 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         api_secret = CLOUDINARY_API_SECRET,
         secure     = True,
     )
-
-# Media — siempre local, las imágenes se suben manualmente via SDK
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+    # Usar storage personalizado que sube directo a Cloudinary
+    DEFAULT_FILE_STORAGE = 'apps.asistencia.storage.CloudinaryStorage'
+    MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/'
+else:
+    MEDIA_URL  = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # ── Autenticación ─────────────────────────────────────────────
 LOGIN_URL           = 'login'
