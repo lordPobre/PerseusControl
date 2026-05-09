@@ -74,14 +74,10 @@ def registrar_marca(request):
     lat, lon = None, None
     if raw_lat and str(raw_lat).lower() not in ('', 'nan', 'none'):
         try:
-            # Formatear a exactamente 7 decimales para cumplir max_digits=10, decimal_places=7
-            lat = round(float(raw_lat), 7)
-            lon = round(float(raw_lon), 7)
-            # Verificar que no excedan los límites del DecimalField(max_digits=10, decimal_places=7)
-            # max parte entera = 10 - 7 = 3 dígitos → máximo ±999.9999999
-            lat = max(-999.9999999, min(999.9999999, lat))
-            lon = max(-999.9999999, min(999.9999999, lon))
-        except (ValueError, TypeError):
+            from decimal import Decimal, ROUND_DOWN, InvalidOperation
+            lat = Decimal(str(raw_lat)).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN)
+            lon = Decimal(str(raw_lon)).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN)
+        except (InvalidOperation, TypeError, ValueError):
             pass
 
     # ── Validaciones hardware (entrada y salida requieren GPS + foto) ──
