@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load perseus_tags %}
 {% load l10n %}
 {% block title %}Mi Perfil · Perseus{% endblock %}
 
@@ -25,7 +26,7 @@
           background:var(--p-s3);border:0.5px solid var(--p-b2);
           display:flex;align-items:center;justify-content:center">
           {% if empresa_activa and empresa_activa.logo %}
-            <img src="{{ empresa_activa.logo.url }}"
+            <img src="{{ empresa_activa.logo|imagen_url }}"
               style="width:100%;height:100%;object-fit:cover"
               alt="{{ empresa_activa.nombre }}">
           {% else %}
@@ -242,7 +243,7 @@
         </div>
         {% endif %}
 
-        <a href="{% url 'ausencias' %}" class="p-btn"
+        <a href="{% url 'mis_ausencias' %}" class="p-btn"
           style="justify-content:center;text-align:center">
           Ver mis ausencias →
         </a>
