@@ -112,43 +112,20 @@ def registrar_marca(request):
         comentario_animo = comentario_animo if tipo == 'SALIDA' else '',
     )
 
-    # ── Foto biométrica → Cloudinary SDK directo ──────────────
+    # ── Foto biométrica → R2 via django-storages ─────────────
     if foto_b64:
         try:
             if ';base64,' in foto_b64:
-                fmt, imgstr = foto_b64.split(';base64,')
+                _, imgstr = foto_b64.split(';base64,')
             else:
                 imgstr = foto_b64
-
             imagen_bytes = base64.b64decode(imgstr)
             ts = int(timezone.now().timestamp())
-
-            from django.conf import settings as cfg
-            if cfg.CLOUDINARY_CLOUD_NAME:
-                # Subir directo via SDK — guarda la URL pública
-                import cloudinary.uploader
-                resultado = cloudinary.uploader.upload(
-                    imagen_bytes,
-                    folder        = f'perseus/marcas/{timezone.localdate().year}/{timezone.localdate().month:02d}',
-                    public_id     = f'marca_{request.user.id}_{ts}',
-                    resource_type = 'image',
-                    overwrite     = False,
-                )
-                # Guardar URL segura de Cloudinary en el campo foto
-                url_cloudinary = resultado.get('secure_url', '')
-                if url_cloudinary:
-                    # Guardar como URLField simulado usando ContentFile vacío con nombre = URL
-                    from django.core.files.base import ContentFile
-                    marca.foto_url = url_cloudinary  # campo extra si existe
-                    # Usar campo foto normal con la URL como nombre
-                    marca.foto = ContentFile(imagen_bytes,
-                        name=f'perseus/marcas/{timezone.localdate().year}/{timezone.localdate().month:02d}/marca_{request.user.id}_{ts}.jpg')
-            else:
-                # Desarrollo local — guardar en filesystem
-                from django.core.files.base import ContentFile
-                marca.foto = ContentFile(imagen_bytes,
-                    name=f'marca_{request.user.id}_{ts}.jpg')
-
+            from django.core.files.base import ContentFile
+            marca.foto = ContentFile(
+                imagen_bytes,
+                name=f'marcas/{timezone.localdate().year}/{timezone.localdate().month:02d}/marca_{request.user.id}_{ts}.jpg'
+            )
         except Exception as e:
             logger.warning(f"Error procesando foto de {request.user.username}: {e}")
             marca.foto = None

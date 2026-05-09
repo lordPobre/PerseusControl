@@ -11,8 +11,9 @@ dj-database-url==2.3.0
 # Imágenes
 Pillow>=10.0,<12.0
 
-# Cloudinary SDK (subida directa sin django-cloudinary-storage)
-cloudinary>=1.36
+# Cloudflare R2 (compatible S3)
+boto3>=1.35
+django-storages>=1.14
 
 # Reportes Excel
 openpyxl>=3.1

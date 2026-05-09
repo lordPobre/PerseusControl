@@ -8,7 +8,7 @@
   <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% load static %}
-{% load perseus_tags %}
+
   <link rel="stylesheet" href="{% static 'css/perseus.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
@@ -62,7 +62,7 @@
     <div class="p-avatar" onclick="document.getElementById('p-user-menu').classList.toggle('open')"
       style="overflow:hidden;padding:0">
       {% if empresa_activa and empresa_activa.logo %}
-        <img src="{{ empresa_activa.logo|imagen_url }}"
+        <img src="{{ empresa_activa.logo.url }}"
           style="width:100%;height:100%;object-fit:cover;border-radius:50%"
           alt="{{ empresa_activa.nombre }}">
       {% else %}
@@ -81,7 +81,7 @@
             background:var(--p-s3);border:0.5px solid var(--p-b2);
             display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500">
             {% if empresa_activa and empresa_activa.logo %}
-              <img src="{{ empresa_activa.logo|imagen_url }}" style="width:100%;height:100%;object-fit:cover">
+              <img src="{{ empresa_activa.logo.url }}" style="width:100%;height:100%;object-fit:cover">
             {% else %}
               {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
             {% endif %}
@@ -146,7 +146,7 @@
       Mis marcas
     </a>
 
-    <a href="{% url 'ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
+    <a href="{% url 'mis_ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'mis_ausencias' %}active{% endif %}">
       <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/></svg>
       Mis ausencias
     </a>
@@ -293,8 +293,8 @@
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     Marcas
   </a>
-  <a href="{% url 'ausencias' %}"
-    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
+  <a href="{% url 'mis_ausencias' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'mis_ausencias' %}active{% endif %}">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     Ausencias
   </a>

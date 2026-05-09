@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Cloudflare R2 via django-storages
+    'storages',
     # Celery Beat
     'django_celery_beat',
     # App principal
@@ -128,17 +130,24 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': CLOUDINARY_API_SECRET,
 }
 
-if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    import cloudinary
-    cloudinary.config(
-        cloud_name = CLOUDINARY_CLOUD_NAME,
-        api_key    = CLOUDINARY_API_KEY,
-        api_secret = CLOUDINARY_API_SECRET,
-        secure     = True,
-    )
-    # Usar storage personalizado que sube directo a Cloudinary
-    DEFAULT_FILE_STORAGE = 'apps.asistencia.storage.CloudinaryStorage'
-    MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/'
+# ── Almacenamiento Cloudflare R2 ──────────────────────────────
+CF_R2_ACCESS_KEY    = config('CF_R2_ACCESS_KEY',    default='')
+CF_R2_SECRET_KEY    = config('CF_R2_SECRET_KEY',    default='')
+CF_R2_BUCKET_NAME   = config('CF_R2_BUCKET_NAME',   default='perseus-media')
+CF_R2_ACCOUNT_ID    = config('CF_R2_ACCOUNT_ID',    default='')
+CF_R2_PUBLIC_URL    = config('CF_R2_PUBLIC_URL',     default='')
+
+if CF_R2_ACCESS_KEY and CF_R2_SECRET_KEY and CF_R2_ACCOUNT_ID:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_ACCESS_KEY_ID      = CF_R2_ACCESS_KEY
+    AWS_SECRET_ACCESS_KEY  = CF_R2_SECRET_KEY
+    AWS_STORAGE_BUCKET_NAME= CF_R2_BUCKET_NAME
+    AWS_S3_ENDPOINT_URL    = f'https://{CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+    AWS_S3_REGION_NAME     = 'auto'
+    AWS_DEFAULT_ACL        = 'public-read'
+    AWS_S3_FILE_OVERWRITE  = False
+    AWS_QUERYSTRING_AUTH   = False
+    MEDIA_URL = CF_R2_PUBLIC_URL + '/' if CF_R2_PUBLIC_URL else f'https://{CF_R2_BUCKET_NAME}.r2.dev/'
 else:
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
