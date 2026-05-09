@@ -138,16 +138,17 @@ CF_R2_ACCOUNT_ID    = config('CF_R2_ACCOUNT_ID',    default='')
 CF_R2_PUBLIC_URL    = config('CF_R2_PUBLIC_URL',     default='')
 
 if CF_R2_ACCESS_KEY and CF_R2_SECRET_KEY and CF_R2_ACCOUNT_ID:
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE   = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_ACCESS_KEY_ID      = CF_R2_ACCESS_KEY
     AWS_SECRET_ACCESS_KEY  = CF_R2_SECRET_KEY
     AWS_STORAGE_BUCKET_NAME= CF_R2_BUCKET_NAME
     AWS_S3_ENDPOINT_URL    = f'https://{CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
     AWS_S3_REGION_NAME     = 'auto'
-    AWS_DEFAULT_ACL        = 'public-read'
     AWS_S3_FILE_OVERWRITE  = False
     AWS_QUERYSTRING_AUTH   = False
-    MEDIA_URL = CF_R2_PUBLIC_URL + '/' if CF_R2_PUBLIC_URL else f'https://{CF_R2_BUCKET_NAME}.r2.dev/'
+    AWS_DEFAULT_ACL        = None  # R2 no soporta ACLs
+    AWS_S3_OBJECT_PARAMETERS = {}  # Sin parámetros extra
+    MEDIA_URL = CF_R2_PUBLIC_URL + '/' if CF_R2_PUBLIC_URL and not CF_R2_PUBLIC_URL.endswith('/') else CF_R2_PUBLIC_URL or f'https://{CF_R2_BUCKET_NAME}.r2.dev/'
 else:
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
