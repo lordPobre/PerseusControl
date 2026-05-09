@@ -146,7 +146,7 @@
       Mis marcas
     </a>
 
-    <a href="{% url 'mis_ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'mis_ausencias' %}active{% endif %}">
+    <a href="{% url 'ausencias' %}" class="p-nav-link {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
       <svg class="p-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/></svg>
       Mis ausencias
     </a>
@@ -293,8 +293,8 @@
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
     Marcas
   </a>
-  <a href="{% url 'mis_ausencias' %}"
-    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'mis_ausencias' %}active{% endif %}">
+  <a href="{% url 'ausencias' %}"
+    class="p-mobile-nav-item {% if request.resolver_match.url_name == 'ausencias' %}active{% endif %}">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     Ausencias
   </a>
