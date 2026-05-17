@@ -1,47 +1,32 @@
-"""
-Perseus v4 — config/celery.py
-Configuración de Celery para tareas asíncronas y programadas.
-"""
 import os
+import ssl
 from celery import Celery
 from celery.schedules import crontab
 
-# Apuntar al settings de Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 app = Celery('perseus')
-
-# Leer configuración desde Django settings (prefijo CELERY_)
 app.config_from_object('django.conf:settings', namespace='CELERY')
-
-# Autodescubrir tareas en todas las apps instaladas
 app.autodiscover_tasks()
+app.autodiscover_tasks(['apps.asistencia'])
 
+# SSL para Upstash Redis (rediss://)
+REDIS_URL = os.environ.get('REDIS_URL', '')
+if REDIS_URL.startswith('rediss://'):
+    ssl_options = {'ssl_cert_reqs': ssl.CERT_NONE}
+    app.conf.broker_use_ssl        = ssl_options
+    app.conf.redis_backend_use_ssl = ssl_options
 
-# ── Schedule de tareas periódicas ─────────────────────────────
+# Schedule de tareas
 app.conf.beat_schedule = {
-
-    # Revisar ausencias — cada 30 min de Lun a Vie
     'revisar-ausencias': {
         'task':     'apps.asistencia.tasks.revisar_ausencias',
-        'schedule': crontab(
-            minute='*/30',      # cada 30 minutos
-            hour='7-20',        # entre 7:00 y 20:00
-            day_of_week='1-5',  # Lunes a Viernes
-        ),
+        'schedule': crontab(minute='*/30', hour='7-20', day_of_week='1-5'),
     },
-
-    # Revisar exceso de jornada — cada 30 min de Lun a Sáb
     'revisar-exceso-jornada': {
         'task':     'apps.asistencia.tasks.revisar_exceso_jornada',
-        'schedule': crontab(
-            minute='*/30',
-            hour='7-22',
-            day_of_week='1-6',  # Lunes a Sábado
-        ),
+        'schedule': crontab(minute='*/30', hour='7-22', day_of_week='1-6'),
     },
-
-    # Limpieza de logs de alerta — diario a las 2 AM
     'limpiar-logs-alertas': {
         'task':     'apps.asistencia.tasks.limpiar_logs_alertas',
         'schedule': crontab(hour=2, minute=0),

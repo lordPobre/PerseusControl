@@ -119,36 +119,19 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # WhiteNoise comprime y cachea estáticos en producción
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ── Almacenamiento de archivos ────────────────────────────────
-CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
-CLOUDINARY_API_KEY    = config('CLOUDINARY_API_KEY',    default='')
-CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
+# ── Almacenamiento AWS S3 ─────────────────────────────────────
+AWS_ACCESS_KEY_ID      = config('AWS_ACCESS_KEY_ID',      default='')
+AWS_SECRET_ACCESS_KEY  = config('AWS_SECRET_ACCESS_KEY',  default='')
+AWS_STORAGE_BUCKET_NAME= config('AWS_STORAGE_BUCKET_NAME',default='')
+AWS_S3_REGION_NAME     = config('AWS_S3_REGION_NAME',     default='sa-east-1')
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-    'API_KEY':    CLOUDINARY_API_KEY,
-    'API_SECRET': CLOUDINARY_API_SECRET,
-}
-
-# ── Almacenamiento Cloudflare R2 ──────────────────────────────
-CF_R2_ACCESS_KEY    = config('CF_R2_ACCESS_KEY',    default='')
-CF_R2_SECRET_KEY    = config('CF_R2_SECRET_KEY',    default='')
-CF_R2_BUCKET_NAME   = config('CF_R2_BUCKET_NAME',   default='perseus-media')
-CF_R2_ACCOUNT_ID    = config('CF_R2_ACCOUNT_ID',    default='')
-CF_R2_PUBLIC_URL    = config('CF_R2_PUBLIC_URL',     default='')
-
-if CF_R2_ACCESS_KEY and CF_R2_SECRET_KEY and CF_R2_ACCOUNT_ID:
-    DEFAULT_FILE_STORAGE   = 'storages.backends.s3boto3.S3Boto3Storage'
-    AWS_ACCESS_KEY_ID      = CF_R2_ACCESS_KEY
-    AWS_SECRET_ACCESS_KEY  = CF_R2_SECRET_KEY
-    AWS_STORAGE_BUCKET_NAME= CF_R2_BUCKET_NAME
-    AWS_S3_ENDPOINT_URL    = f'https://{CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
-    AWS_S3_REGION_NAME     = 'auto'
-    AWS_S3_FILE_OVERWRITE  = False
-    AWS_QUERYSTRING_AUTH   = False
-    AWS_DEFAULT_ACL        = None  # R2 no soporta ACLs
-    AWS_S3_OBJECT_PARAMETERS = {}  # Sin parámetros extra
-    MEDIA_URL = CF_R2_PUBLIC_URL + '/' if CF_R2_PUBLIC_URL and not CF_R2_PUBLIC_URL.endswith('/') else CF_R2_PUBLIC_URL or f'https://{CF_R2_BUCKET_NAME}.r2.dev/'
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
+    DEFAULT_FILE_STORAGE  = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL       = 'public-read'
+    AWS_QUERYSTRING_AUTH  = False
+    AWS_S3_CUSTOM_DOMAIN  = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    MEDIA_URL             = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
 else:
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
@@ -195,6 +178,17 @@ REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
 CELERY_BROKER_URL       = REDIS_URL
 CELERY_RESULT_BACKEND   = REDIS_URL
+CELERY_TIMEZONE         = TIME_ZONE
+CELERY_ACCEPT_CONTENT   = ['json']
+CELERY_TASK_SERIALIZER  = 'json'
+CELERY_RESULT_SERIALIZER= 'json'
+
+# SSL para Upstash Redis (rediss://)
+if REDIS_URL.startswith('rediss://'):
+    import ssl
+    _ssl = {'ssl_cert_reqs': ssl.CERT_NONE}
+    CELERY_BROKER_USE_SSL        = _ssl
+    CELERY_REDIS_BACKEND_USE_SSL = _ssl
 CELERY_TIMEZONE         = TIME_ZONE  # America/Santiago
 CELERY_ACCEPT_CONTENT   = ['json']
 CELERY_TASK_SERIALIZER  = 'json'
