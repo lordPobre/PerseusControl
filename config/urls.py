@@ -45,6 +45,37 @@ def diagnostico_r2(request):
     except Exception as e:
         resultado['test_upload'] = f'ERROR: {str(e)}'
     
+    # Test subida via Django storage
+    try:
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        path = default_storage.save(
+            'diagnostico/test_django.txt',
+            ContentFile(b'Perseus Django storage test')
+        )
+        url = default_storage.url(path)
+        resultado['django_storage'] = f'EXITOSO — {url}'
+    except Exception as e:
+        resultado['django_storage'] = f'ERROR: {str(e)}'
+
+    # Test subida imagen via Django storage
+    try:
+        from django.core.files.storage import default_storage
+        from django.core.files.base import ContentFile
+        # Imagen PNG mínima válida (1x1 pixel)
+        import base64
+        png_1x1 = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+        )
+        path = default_storage.save(
+            'logos/test_logo.png',
+            ContentFile(png_1x1)
+        )
+        url = default_storage.url(path)
+        resultado['test_imagen'] = f'EXITOSO — {url}'
+    except Exception as e:
+        resultado['test_imagen'] = f'ERROR: {str(e)}'
+
     return JsonResponse(resultado)
 
 urlpatterns = [
