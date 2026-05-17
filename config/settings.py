@@ -126,15 +126,15 @@ AWS_STORAGE_BUCKET_NAME= config('AWS_STORAGE_BUCKET_NAME',default='')
 AWS_S3_REGION_NAME     = config('AWS_S3_REGION_NAME',     default='sa-east-1')
 
 if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
-    DEFAULT_FILE_STORAGE  = 'storages.backends.s3boto3.S3Boto3Storage'
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL       = None
-    AWS_QUERYSTRING_AUTH  = False
-    AWS_S3_CUSTOM_DOMAIN  = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
-    MEDIA_URL             = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
-    AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400',
-    }
+    DEFAULT_FILE_STORAGE      = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_S3_FILE_OVERWRITE     = False
+    AWS_DEFAULT_ACL           = None
+    AWS_QUERYSTRING_AUTH      = False
+    AWS_S3_ADDRESSING_STYLE   = 'virtual'
+    AWS_S3_SIGNATURE_VERSION  = 's3v4'
+    AWS_S3_CUSTOM_DOMAIN      = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+    MEDIA_URL                 = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    AWS_S3_OBJECT_PARAMETERS  = {'CacheControl': 'max-age=86400'}
 else:
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
