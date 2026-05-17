@@ -134,7 +134,10 @@ if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
     AWS_S3_SIGNATURE_VERSION  = 's3v4'
     AWS_S3_CUSTOM_DOMAIN      = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
     MEDIA_URL                 = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+    # Forzar que NO se envíe ACL en ningún request
     AWS_S3_OBJECT_PARAMETERS  = {'CacheControl': 'max-age=86400'}
+    AWS_S3_EXTRA_KWARGS       = {}
+    AWS_HEADERS               = {}
 else:
     MEDIA_URL  = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
