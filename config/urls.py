@@ -20,25 +20,24 @@ def diagnostico_r2(request):
         'storage':    django_settings.DEFAULT_FILE_STORAGE,
         'media_url':  django_settings.MEDIA_URL,
         'bucket':     getattr(django_settings, 'AWS_STORAGE_BUCKET_NAME', ''),
-        'endpoint':   getattr(django_settings, 'AWS_S3_ENDPOINT_URL', ''),
+        'region':     getattr(django_settings, 'AWS_S3_REGION_NAME', ''),
         'access_key': getattr(django_settings, 'AWS_ACCESS_KEY_ID', '')[:6] + '...' if getattr(django_settings, 'AWS_ACCESS_KEY_ID', '') else '',
+        'acl':        getattr(django_settings, 'AWS_DEFAULT_ACL', ''),
     }
     
     # Test de subida
     try:
         import boto3
-        from botocore.exceptions import ClientError
         s3 = boto3.client(
             's3',
-            endpoint_url          = django_settings.AWS_S3_ENDPOINT_URL,
             aws_access_key_id     = django_settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key = django_settings.AWS_SECRET_ACCESS_KEY,
-            region_name           = 'auto',
+            region_name           = django_settings.AWS_S3_REGION_NAME,
         )
         s3.put_object(
             Bucket      = django_settings.AWS_STORAGE_BUCKET_NAME,
             Key         = 'test/diagnostico.txt',
-            Body        = b'Perseus R2 test OK',
+            Body        = b'Perseus S3 test OK',
             ContentType = 'text/plain',
         )
         resultado['test_upload'] = 'EXITOSO'
