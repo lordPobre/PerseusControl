@@ -1,0 +1,47 @@
+# Perseus Control v4 — Requirements Railway compatible
+
+# Core Django
+Django>=5.1,<5.3
+python-decouple==3.8
+
+# Base de datos
+psycopg2-binary==2.9.9
+dj-database-url==2.3.0
+
+# Imágenes
+Pillow>=10.0,<12.0
+
+# Cloudflare R2 (compatible S3)
+boto3>=1.35
+django-storages>=1.14
+
+# Reportes Excel
+openpyxl>=3.1
+
+# Reportes PDF
+reportlab==4.2.5
+
+# Geolocalización
+geopy>=2.3
+
+# NTP
+ntplib>=0.4
+
+# Pre-nómina
+pandas>=2.0,<2.3
+numpy>=1.24,<2.0
+
+# Servidor producción
+gunicorn>=21.0
+whitenoise>=6.5
+
+# Utilidades
+requests>=2.31
+
+# Celery + Redis
+celery>=5.3,<6.0
+redis>=5.0,<6.0
+django-celery-beat>=2.6
+
+# IA Gemini
+google-generativeai>=0.7

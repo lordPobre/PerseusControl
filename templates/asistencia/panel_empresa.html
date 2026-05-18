@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Panel Empresa · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">{{ empresa.nombre }}</h1>
+    <p class="p-page-sub">Panel de gestión · Marcaciones en tiempo real</p>
+  </div>
+  <div class="p-flex p-gap-8">
+    <button class="p-btn" onclick="abrirModal('modal-remuneraciones')">
+      <svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Remuneraciones
+    </button>
+    <a href="{% url 'exportar_clima' %}" class="p-btn">
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Clima
+    </a>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="p-card">
+  <div class="p-card-body">
+    <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="p-form-group" style="flex:2;min-width:180px">
+        <label class="p-label">Buscar trabajador</label>
+        <input type="text" name="busqueda" value="{{ busqueda }}" class="p-input" placeholder="Nombre o RUT...">
+      </div>
+      <div class="p-form-group">
+        <label class="p-label">Desde</label>
+        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="p-input">
+      </div>
+      <div class="p-form-group">
+        <label class="p-label">Hasta</label>
+        <input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="p-input">
+      </div>
+      <div class="p-flex p-gap-8">
+        <button type="submit" class="p-btn p-btn-primary">Filtrar</button>
+        <button type="submit" formaction="{% url 'exportar_excel' %}" class="p-btn">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Excel
+        </button>
+        <a href="{{ request.path }}" class="p-btn">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla escritorio -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Registros de asistencia</span>
+    <span class="p-card-count">{{ page_obj.paginator.count }} total · pág. {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+  </div>
+  <div style="overflow-x:auto"><table class="p-table">
+    <thead>
+      <tr>
+        <th>Trabajador</th>
+        <th>Cargo</th>
+        <th>Fecha / Hora</th>
+        <th>Tipo</th>
+        <th>Ubicación</th>
+        <th>Foto</th>
+        <th>Ánimo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in marcas %}
+      <tr>
+        <td>
+          <div class="p-td-name">{{ m.trabajador.get_full_name }}</div>
+          <div class="p-td-sub">{{ m.trabajador.perfil.rut|default:"S/I" }}</div>
+        </td>
+        <td><span class="p-badge p-n">{{ m.trabajador.perfil.cargo|default:"–" }}</span></td>
+        <td class="p-td-mono">{{ m.timestamp|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if m.tipo == 'ENTRADA' %}<span class="p-badge p-g">Entrada</span>
+          {% elif m.tipo == 'SALIDA' %}<span class="p-badge p-r">Salida</span>
+          {% else %}<span class="p-badge p-a">{{ m.get_tipo_display }}</span>{% endif %}
+        </td>
+        <td style="max-width:220px">
+          {% if m.direccion %}
+          <div style="font-size:11px;color:var(--p-ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px"
+            title="{{ m.direccion }}">
+            {{ m.direccion|truncatechars:45 }}
+          </div>
+          <a href="https://www.google.com/maps/search/?api=1&query={{ m.direccion|urlencode }}"
+            target="_blank"
+            style="font-size:10px;color:var(--p-blm);margin-top:2px;display:inline-block">
+            Ver en mapa →
+          </a>
+          {% elif m.latitud %}
+          <a href="https://www.google.com/maps?q={{ m.latitud|unlocalize }},{{ m.longitud|unlocalize }}"
+            target="_blank" style="font-size:11px;color:var(--p-blm)">
+            Ver coordenadas →
+          </a>
+          {% else %}
+          <span style="color:var(--p-ink3);font-size:11px">Sin GPS</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if m.foto %}
+          <a href="{{ m.foto.url }}" target="_blank">
+            <img src="{{ m.foto.url }}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:0.5px solid var(--p-b2)">
+          </a>
+          {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}
+        </td>
+        <td>
+          {% if m.tipo == 'SALIDA' and m.animo %}
+            {% if m.animo == 'FELIZ' %}😄{% elif m.animo == 'NEUTRAL' %}😐{% else %}😔{% endif %}
+          {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="p-empty">Sin marcas con los filtros aplicados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="p-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&busqueda={{ busqueda }}&fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}" class="p-page-btn">← Anterior</a>
+    {% endif %}
+    <span class="p-page-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&busqueda={{ busqueda }}&fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}" class="p-page-btn">Siguiente →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal Remuneraciones -->
+<div class="p-modal-overlay" id="modal-remuneraciones">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">Reporte remuneraciones</span>
+      <button class="p-modal-close" onclick="this.closest('.p-modal-overlay').classList.remove('open')">&times;</button>
+    </div>
+    <form action="{% url 'reporte_remuneraciones' %}" method="GET">
+      <div class="p-modal-body">
+        <p style="font-size:13px;color:var(--p-ink2);margin-bottom:4px">
+          Selecciona el rango para calcular la pre-nómina LRE con H.E. y atrasos.
+        </p>
+        <div class="p-form-group">
+          <label class="p-label">Fecha inicio</label>
+          <input type="date" name="fecha_inicio" class="p-input" required>
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Fecha fin</label>
+          <input type="date" name="fecha_fin" class="p-input" required>
+        </div>
+        <div class="p-alert p-alert-b" style="font-size:12px">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          Incluye: días trabajados, H.E. 50% y 100%, atrasos y ausencias.
+        </div>
+      </div>
+      <div class="p-modal-footer">
+        <button type="button" onclick="this.closest('.p-modal-overlay').classList.remove('open')" class="p-btn">Cancelar</button>
+        <button type="submit" class="p-btn p-btn-primary">Descargar Excel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+document.querySelectorAll('.p-modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+</script>
+{% endblock %}

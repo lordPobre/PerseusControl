@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Mis Marcas · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">Mis marcas</h1>
+    <p class="p-page-sub">Historial completo de asistencia</p>
+  </div>
+  <a href="{% url 'mi_pdf' %}" class="p-btn">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Descargar PDF
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="p-card">
+  <div class="p-card-body">
+    <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="p-form-group" style="flex:1;min-width:140px">
+        <label class="p-label">Desde</label>
+        <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="p-input">
+      </div>
+      <div class="p-form-group" style="flex:1;min-width:140px">
+        <label class="p-label">Hasta</label>
+        <input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="p-input">
+      </div>
+      <button type="submit" class="p-btn p-btn-primary">Filtrar</button>
+      <a href="{% url 'mis_marcas' %}" class="p-btn">Limpiar</a>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Registros</span>
+    <span class="p-card-count">{{ page_obj.paginator.count }} total</span>
+  </div>
+
+  <!-- Escritorio -->
+  <div class="d-none d-md-block" style="display:block">
+    <div style="overflow-x:auto"><table class="p-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Tipo</th>
+          <th>Ubicación</th>
+          <th>Foto</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in marcas %}
+        <tr>
+          <td class="p-td-mono">{{ m.timestamp|date:"d/m/Y" }}</td>
+          <td class="p-td-mono" style="font-weight:500">{{ m.timestamp|date:"H:i" }}</td>
+          <td>
+            {% if m.tipo == 'ENTRADA' %}<span class="p-badge p-g">Entrada</span>
+            {% elif m.tipo == 'SALIDA' %}<span class="p-badge p-r">Salida</span>
+            {% else %}<span class="p-badge p-a">{{ m.get_tipo_display }}</span>{% endif %}
+            {% if m.es_manual %}<span class="p-badge p-n" style="margin-left:4px">manual</span>{% endif %}
+          </td>
+          <td style="max-width:200px">
+            {% if m.latitud %}
+            <a href="https://www.google.com/maps?q={{ m.latitud }},{{ m.longitud }}"
+              target="_blank" class="p-truncate"
+              style="font-size:11px;color:var(--p-blm);display:block;max-width:200px">
+              {{ m.direccion|default:"Ver en mapa" }}
+            </a>
+            {% else %}<span style="color:var(--p-ink3);font-size:11px">Sin GPS</span>{% endif %}
+          </td>
+          <td>
+            {% if m.foto %}
+            <a href="{{ m.foto.url }}" target="_blank">
+              <img src="{{ m.foto.url }}"
+                style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:0.5px solid var(--p-b2)">
+            </a>
+            {% else %}<span style="color:var(--p-ink3)">—</span>{% endif %}
+          </td>
+          <td>
+            {% if m.estado == 'VIGENTE' %}<span class="p-badge p-g">Vigente</span>
+            {% elif m.estado == 'RECTIFICADA' %}<span class="p-badge p-a">Rectificada</span>
+            {% else %}<span class="p-badge p-r">Anulada</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="p-empty">Sin marcas en este período.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="p-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}"
+      class="p-page-btn">← Anterior</a>
+    {% endif %}
+    <span class="p-page-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}"
+      class="p-page-btn">Siguiente →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

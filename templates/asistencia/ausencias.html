@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Mis Ausencias · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <h1 class="p-page-title">Mis ausencias</h1>
+  <p class="p-page-sub">Vacaciones · Licencias médicas · Días administrativos</p>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:2px;background:var(--p-s3);border-radius:var(--p-r8);
+  padding:3px;width:fit-content;margin-bottom:4px">
+  <a href="?tab=vacaciones"
+    style="padding:7px 16px;border-radius:6px;font-size:12px;font-weight:500;
+      text-decoration:none;transition:background .15s;
+      {% if tab_activo == 'vacaciones' %}background:var(--p-s);color:var(--p-ink)
+      {% else %}color:var(--p-ink2){% endif %}">
+    🏖️ Vacaciones
+    {% if dias_pendientes > 0 %}<span style="font-size:10px;color:var(--p-am)">({{ dias_pendientes }}d pendientes)</span>{% endif %}
+  </a>
+  <a href="?tab=licencias"
+    style="padding:7px 16px;border-radius:6px;font-size:12px;font-weight:500;
+      text-decoration:none;transition:background .15s;
+      {% if tab_activo == 'licencias' %}background:var(--p-s);color:var(--p-ink)
+      {% else %}color:var(--p-ink2){% endif %}">
+    🏥 Licencias ({{ licencias.count }})
+  </a>
+  <a href="?tab=admin"
+    style="padding:7px 16px;border-radius:6px;font-size:12px;font-weight:500;
+      text-decoration:none;transition:background .15s;
+      {% if tab_activo == 'admin' %}background:var(--p-s);color:var(--p-ink)
+      {% else %}color:var(--p-ink2){% endif %}">
+    📋 Días admin. ({{ dias_admin.count }})
+  </a>
+</div>
+
+<!-- ══════════ TAB VACACIONES ══════════ -->
+{% if tab_activo == 'vacaciones' %}
+<div class="p-grid-2" style="align-items:start">
+
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Solicitar días libres</span></div>
+    <div class="p-card-body">
+
+      <!-- Saldo -->
+      <div style="background:var(--p-s2);border-radius:var(--p-r8);padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:500;color:var(--p-ink3);
+          text-transform:uppercase;margin-bottom:10px">
+          Saldo {{ hoy|date:"Y" }}
+        </div>
+        <div style="height:6px;background:var(--p-s3);border-radius:3px;
+          overflow:hidden;margin-bottom:12px">
+          {% if dias_base > 0 %}
+          <div style="height:100%;border-radius:3px;background:var(--p-gm);
+            width:{% widthratio dias_disponibles dias_base 100 %}%"></div>
+          {% endif %}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-g)">{{ dias_disponibles }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Disponibles</div>
+          </div>
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-rm)">{{ dias_usados }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Usados</div>
+          </div>
+          <div style="background:var(--p-s);border-radius:var(--p-r8);padding:10px">
+            <div style="font-size:24px;font-weight:500;color:var(--p-am)">{{ dias_pendientes }}</div>
+            <div style="font-size:10px;color:var(--p-ink3);margin-top:3px">Pendientes</div>
+          </div>
+        </div>
+        {% if dias_disponibles == 0 %}
+        <div class="p-alert p-alert-a" style="margin-top:12px;font-size:12px">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Has agotado tu saldo de {{ dias_base }} días para este año.
+        </div>
+        {% elif dias_disponibles <= 3 %}
+        <div class="p-alert p-alert-a" style="margin-top:12px;font-size:12px">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Solo te quedan {{ dias_disponibles }} días disponibles.
+        </div>
+        {% endif %}
+      </div>
+
+      <form method="POST" style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="vacacion">
+        <div class="p-form-group">
+          <label class="p-label">Desde</label>
+          <input type="date" name="fecha_inicio" class="p-input" required min="{{ hoy|date:'Y-m-d' }}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Hasta</label>
+          <input type="date" name="fecha_fin" class="p-input" required min="{{ hoy|date:'Y-m-d' }}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Comentario (opcional)</label>
+          <textarea name="motivo" class="p-input p-textarea"
+            placeholder="Ej: Viaje familiar..."></textarea>
+        </div>
+        {% if dias_disponibles > 0 %}
+          <button type="submit" class="p-btn p-btn-g">Enviar solicitud</button>
+        {% else %}
+          <button type="button" class="p-btn" disabled style="opacity:.45;cursor:not-allowed">
+            Sin saldo disponible
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Mis solicitudes</span>
+      <span class="p-card-count">{{ vacaciones.count }}</span>
+    </div>
+    <table class="p-table">
+      <thead><tr><th>Fecha sol.</th><th>Período</th><th>Días</th><th>Estado</th></tr></thead>
+      <tbody>
+        {% for v in vacaciones %}
+        <tr>
+          <td class="p-td-mono" style="font-size:11px">{{ v.fecha_solicitud|date:"d/m/Y" }}</td>
+          <td style="font-size:12px">{{ v.inicio|date:"d M" }} → {{ v.fin|date:"d M Y" }}</td>
+          <td style="text-align:center;font-weight:500">{{ v.dias_habiles }}</td>
+          <td>
+            {% if v.estado == 'APROBADA' %}<span class="p-badge p-g">✓ Aprobada</span>
+            {% elif v.estado == 'RECHAZADA' %}<span class="p-badge p-r">✗ Rechazada</span>
+            {% else %}<span class="p-badge p-a">⏳ Pendiente</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="p-empty">Sin solicitudes.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endif %}
+
+<!-- ══════════ TAB LICENCIAS ══════════ -->
+{% if tab_activo == 'licencias' %}
+<div class="p-grid-2" style="align-items:start">
+
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Subir licencia médica</span></div>
+    <div class="p-card-body">
+
+      <div class="p-alert p-alert-b" style="margin-bottom:16px;font-size:12px">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div>
+          Sube tu licencia médica para que RRHH la valide. Una vez aprobada,
+          los días no contarán como ausencia injustificada.
+        </div>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data"
+        style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="licencia">
+
+        <div class="p-form-group">
+          <label class="p-label">Tipo de licencia</label>
+          <select name="tipo" class="p-input p-select">
+            {% for val, label in tipo_licencia_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="p-grid-2">
+          <div class="p-form-group">
+            <label class="p-label">Fecha inicio</label>
+            <input type="date" name="inicio" class="p-input" required>
+          </div>
+          <div class="p-form-group">
+            <label class="p-label">Fecha fin</label>
+            <input type="date" name="fin" class="p-input" required>
+          </div>
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">N° Folio (opcional)</label>
+          <input type="text" name="folio" class="p-input"
+            placeholder="Ej: LM-2026-00123">
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Documento PDF</label>
+          <input type="file" name="documento" class="p-input"
+            accept=".pdf,.jpg,.jpeg,.png">
+          <small style="font-size:11px;color:var(--p-ink3)">
+            Adjunta el certificado médico o licencia escaneada.
+          </small>
+        </div>
+
+        <button type="submit" class="p-btn p-btn-primary">
+          Enviar licencia a RRHH
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Mis licencias</span>
+      <span class="p-card-count">{{ licencias.count }}</span>
+    </div>
+    <table class="p-table">
+      <thead>
+        <tr><th>Tipo</th><th>Período</th><th>Folio</th><th>Estado</th><th>Doc.</th></tr>
+      </thead>
+      <tbody>
+        {% for l in licencias %}
+        <tr>
+          <td><span class="p-badge p-b" style="font-size:10px">{{ l.get_tipo_display }}</span></td>
+          <td style="font-size:12px">{{ l.inicio|date:"d M" }} → {{ l.fin|date:"d M Y" }}</td>
+          <td style="font-size:11px;color:var(--p-ink3)">{{ l.folio|default:"–" }}</td>
+          <td>
+            {% if l.estado == 'APROBADA' %}<span class="p-badge p-g">✓ Aprobada</span>
+            {% elif l.estado == 'RECHAZADA' %}
+              <span class="p-badge p-r" title="{{ l.comentario_rrhh }}">✗ Rechazada</span>
+            {% else %}<span class="p-badge p-a">⏳ Pendiente</span>{% endif %}
+          </td>
+          <td>
+            {% if l.documento %}
+            <a href="{{ l.documento.url }}" target="_blank"
+              class="p-btn" style="font-size:10px;padding:3px 8px">
+              Ver PDF
+            </a>
+            {% else %}
+            <span style="color:var(--p-ink3);font-size:11px">Sin doc.</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="p-empty">Sin licencias registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endif %}
+
+<!-- ══════════ TAB DÍAS ADMIN ══════════ -->
+{% if tab_activo == 'admin' %}
+<div class="p-grid-2" style="align-items:start">
+
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Solicitar día administrativo</span></div>
+    <div class="p-card-body">
+      <form method="POST" style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="dia_admin">
+        <div class="p-form-group">
+          <label class="p-label">Fecha</label>
+          <input type="date" name="fecha" class="p-input" required
+            min="{{ hoy|date:'Y-m-d' }}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Duración</label>
+          <select name="tipo_jornada" class="p-input p-select">
+            <option value="COMPLETO">Día completo</option>
+            <option value="MANANA">Solo mañana</option>
+            <option value="TARDE">Solo tarde</option>
+          </select>
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Motivo (opcional)</label>
+          <textarea name="motivo" class="p-input p-textarea"
+            placeholder="Ej: Trámites en notaría..."></textarea>
+        </div>
+        <button type="submit" class="p-btn p-btn-primary">
+          Enviar solicitud
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Mis solicitudes</span>
+      <span class="p-card-count">{{ dias_admin.count }}</span>
+    </div>
+    <table class="p-table">
+      <thead>
+        <tr><th>Fecha</th><th>Jornada</th><th>Motivo</th><th>Estado</th></tr>
+      </thead>
+      <tbody>
+        {% for d in dias_admin %}
+        <tr>
+          <td class="p-td-mono">{{ d.fecha|date:"d/m/Y" }}</td>
+          <td><span class="p-badge p-n">{{ d.get_tipo_jornada_display }}</span></td>
+          <td style="font-size:11px;color:var(--p-ink3)">
+            {{ d.motivo|truncatechars:30|default:"–" }}
+          </td>
+          <td>
+            {% if d.estado == 'APROBADO' %}<span class="p-badge p-g">✓ Aprobado</span>
+            {% elif d.estado == 'RECHAZADO' %}<span class="p-badge p-r">✗ Rechazado</span>
+            {% else %}<span class="p-badge p-a">⏳ Pendiente</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="p-empty">Sin solicitudes.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endif %}
+
+{% endblock %}

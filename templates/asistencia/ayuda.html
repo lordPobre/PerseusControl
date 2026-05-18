@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Ayuda · Perseus{% endblock %}
+{% block content %}
+<div style="max-width:720px;margin:0 auto">
+  <div class="p-page-head"><h1 class="p-page-title">Centro de ayuda</h1></div>
+
+  {% for seccion, items in secciones.items %}{% endfor %}
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Marcar entrada y salida</span></div>
+      <div class="p-card-body" style="font-size:13px;color:var(--p-ink2);line-height:1.7">
+        <p>En el Dashboard presiona el botón verde <strong>Marcar entrada</strong> al llegar y el rojo <strong>Marcar salida</strong> al terminar. El sistema requiere GPS activo y cámara habilitada para entradas y salidas.</p>
+        <div class="p-alert p-alert-a" style="margin-top:10px;font-size:12px">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Debes presionar <strong>Permitir</strong> cuando el navegador solicite acceso a ubicación y cámara.
+        </div>
+      </div>
+    </div>
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Colación</span></div>
+      <div class="p-card-body" style="font-size:13px;color:var(--p-ink2);line-height:1.7">
+        <p>Presiona <strong>Inicio colación</strong> al salir a descanso y <strong>Volver de colación</strong> al regresar. El tiempo de colación no se descuenta automáticamente del cálculo de horas.</p>
+      </div>
+    </div>
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Solicitar corrección de marca</span></div>
+      <div class="p-card-body" style="font-size:13px;color:var(--p-ink2);line-height:1.7">
+        <p>Si olvidaste marcar o la hora fue incorrecta, usa el botón <strong>Solicitud</strong> en el Dashboard. Elige el tipo (nueva marca o corrección), indica la hora real y el motivo. RRHH debe aprobar la corrección.</p>
+      </div>
+    </div>
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Vacaciones y días administrativos</span></div>
+      <div class="p-card-body" style="font-size:13px;color:var(--p-ink2);line-height:1.7">
+        <p>Accede desde el sidebar a <strong>Vacaciones</strong> o <strong>Días admin.</strong> para enviar solicitudes. Las solicitudes quedan en estado Pendiente hasta que RRHH las apruebe o rechace.</p>
+      </div>
+    </div>
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Descargar mi comprobante PDF</span></div>
+      <div class="p-card-body" style="font-size:13px;color:var(--p-ink2);line-height:1.7">
+        <p>Desde el sidebar entra a <strong>Mi comprobante</strong> para descargar tu libro de asistencia personal en PDF con firma digital SHA-256, válido ante la Dirección del Trabajo.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Importar Nómina · Perseus{% endblock %}
+
+{% block content %}
+<div style="max-width:580px;margin:0 auto">
+
+  <div class="p-page-head">
+    <h1 class="p-page-title">Importar nómina</h1>
+  </div>
+
+  <div class="p-alert p-alert-a" style="margin-bottom:16px">
+    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Acceso exclusivo para administradores del sistema.
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Carga masiva desde Excel</span>
+    </div>
+    <div class="p-card-body">
+
+      <div class="p-alert p-alert-b" style="margin-bottom:16px;font-size:12px">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div>
+          <strong>Columnas requeridas (en orden):</strong><br>
+          username · email · nombres · apellidos · rut · cargo · hora_entrada<br>
+          lunes · martes · miercoles · jueves · viernes · sabado · domingo
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data"
+        style="display:flex;flex-direction:column;gap:14px">
+        {% csrf_token %}
+        <div class="p-form-group">
+          <label class="p-label">Archivo Excel (.xlsx)</label>
+          <input type="file" name="archivo_excel" class="p-input" accept=".xlsx" required>
+          <small style="font-size:11px;color:var(--p-ink3)">
+            Los usuarios nuevos recibirán como contraseña inicial su RUT sin puntos.
+          </small>
+        </div>
+        <button type="submit" class="p-btn p-btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Procesar nómina
+        </button>
+        <a href="{% url 'dashboard' %}" class="p-btn" style="justify-content:center">
+          Cancelar
+        </a>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

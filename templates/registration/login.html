@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso · Perseus Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
+  {% load static %}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:#1a1a1a; --ink2:#555; --ink3:#999;
+      --s:#fff; --s2:#f7f7f5; --s3:#f0efec;
+      --b:rgba(0,0,0,.08); --b2:rgba(0,0,0,.14);
+      --g:#1a6644; --gbg:#e8f5ee; --gm:#2d8f5e;
+      --r8:8px; --r14:14px; --rpill:999px;
+      --font:'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+    body {
+      font-family: var(--font);
+      background: var(--s2);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-wrap {
+      width: 100%; max-width: 400px;
+    }
+    .login-brand {
+      display: flex; align-items: center; gap: 12px;
+      justify-content: center; margin-bottom: 32px;
+    }
+    .login-mark {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-mark svg {
+      width: 18px; height: 18px;
+      stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round;
+    }
+    .login-name { font-size: 18px; font-weight: 500; color: var(--ink); }
+    .login-sub  { font-size: 11px; color: var(--ink3); }
+
+    .login-card {
+      background: var(--s);
+      border: 0.5px solid var(--b2);
+      border-radius: var(--r14);
+      padding: 32px;
+    }
+    .login-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+    .login-desc  { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-label { font-size: 11px; font-weight: 500; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; }
+    .form-input {
+      background: var(--s2); border: 0.5px solid var(--b2);
+      border-radius: var(--r8); padding: 10px 12px;
+      font-size: 13px; color: var(--ink);
+      width: 100%; font-family: var(--font);
+      transition: border-color .15s;
+    }
+    .form-input:focus { outline: none; border-color: #378add; }
+    .form-input::placeholder { color: var(--ink3); }
+
+    .login-btn {
+      width: 100%; padding: 11px;
+      background: var(--ink); color: #fff;
+      border: none; border-radius: var(--r8);
+      font-size: 13px; font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer; margin-top: 8px;
+      transition: opacity .15s;
+    }
+    .login-btn:hover { opacity: .88; }
+
+    .login-error {
+      background: #fdf0f0; border: 0.5px solid rgba(226,75,74,.25);
+      border-radius: var(--r8); padding: 10px 14px;
+      font-size: 12px; color: #991f1f;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .login-error svg { width: 14px; height: 14px; stroke: #e24b4a; fill: none; stroke-width: 2; flex-shrink: 0; }
+
+    .login-footer {
+      text-align: center; margin-top: 20px;
+      font-size: 11px; color: var(--ink3);
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-brand">
+    <div class="login-mark">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+    </div>
+    <div>
+      <div class="login-name">Perseus Control</div>
+      <div class="login-sub">Sistema de Asistencia Digital</div>
+    </div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-title">Bienvenido</div>
+    <div class="login-desc">Ingresa tus credenciales para continuar</div>
+
+    {% if form.errors %}
+    <div class="login-error">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      RUT o contraseña incorrectos. Intenta nuevamente.
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="id_username">RUT / Usuario</label>
+        <input type="text" id="id_username" name="username"
+          class="form-input" placeholder="12.345.678-9"
+          autocomplete="username" autofocus required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_password">Contraseña</label>
+        <input type="password" id="id_password" name="password"
+          class="form-input" placeholder="••••••••"
+          autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="login-btn">Ingresar</button>
+    </form>
+  </div>
+
+  <div class="login-footer">
+    ¿Olvidaste tu contraseña? Contacta a Recursos Humanos.<br>
+    <span style="margin-top:6px;display:block">&copy; {% now "Y" %} Perseus Control · Todos los derechos reservados</span>
+  </div>
+</div>
+
+</body>
+</html>

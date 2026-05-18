@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Días Administrativos · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <h1 class="p-page-title">Días administrativos</h1>
+</div>
+
+<div class="p-grid-2" style="align-items:start">
+
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Solicitar día</span></div>
+    <div class="p-card-body">
+      <form method="POST" style="display:flex;flex-direction:column;gap:12px">
+        {% csrf_token %}
+        <div class="p-form-group">
+          <label class="p-label">Fecha</label>
+          <input type="date" name="fecha" class="p-input" required
+            min="{% now 'Y-m-d' %}">
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Duración</label>
+          <select name="tipo_jornada" class="p-input p-select">
+            <option value="COMPLETO">Día completo</option>
+            <option value="MANANA">Solo mañana</option>
+            <option value="TARDE">Solo tarde</option>
+          </select>
+        </div>
+        <div class="p-form-group">
+          <label class="p-label">Motivo (opcional)</label>
+          <textarea name="motivo" class="p-input p-textarea"
+            placeholder="Ej: Trámites bancarios..."></textarea>
+        </div>
+        <button type="submit" class="p-btn p-btn-primary">
+          Enviar solicitud
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="p-card">
+    <div class="p-card-head">
+      <span class="p-card-title">Mis solicitudes</span>
+      <span class="p-card-count">{{ solicitudes.count }}</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="p-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Jornada</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in solicitudes %}
+          <tr>
+            <td class="p-td-mono">{{ d.fecha|date:"d/m/Y" }}</td>
+            <td>
+              <span class="p-badge p-n">{{ d.get_tipo_jornada_display }}</span>
+            </td>
+            <td>
+              {% if d.estado == 'APROBADO' %}
+                <span class="p-badge p-g">✓ Aprobado</span>
+              {% elif d.estado == 'RECHAZADO' %}
+                <span class="p-badge p-r">✗ Rechazado</span>
+              {% else %}
+                <span class="p-badge p-a">⏳ Pendiente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="p-empty">Sin solicitudes registradas.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Privacidad · Perseus{% endblock %}
+{% block content %}
+<div style="max-width:720px;margin:0 auto">
+  <div class="p-page-head"><h1 class="p-page-title">Política de privacidad</h1></div>
+  <div class="p-card">
+    <div class="p-card-body" style="display:flex;flex-direction:column;gap:20px;line-height:1.7;font-size:14px;color:var(--p-ink2)">
+      <div>
+        <h3 style="font-size:14px;font-weight:500;color:var(--p-ink);margin-bottom:6px">1. Uso de la información</h3>
+        <p>Perseus Control utiliza los datos recopilados exclusivamente para el registro y control de asistencia laboral, en cumplimiento con las normativas de la Dirección del Trabajo (DT). Los datos no son utilizados para fines comerciales ni cedidos a terceros.</p>
+      </div>
+      <div>
+        <h3 style="font-size:14px;font-weight:500;color:var(--p-ink);margin-bottom:6px">2. Geolocalización (GPS)</h3>
+        <p>La ubicación se captura <strong>únicamente</strong> al momento del marcaje. No se realiza rastreo en segundo plano ni fuera del horario laboral. El objetivo es validar que el marcaje se realice en el lugar de trabajo.</p>
+      </div>
+      <div>
+        <h3 style="font-size:14px;font-weight:500;color:var(--p-ink);margin-bottom:6px">3. Fotografía biométrica</h3>
+        <p>La foto capturada al marcar se almacena de forma segura y solo es accesible por personal de RRHH autorizado para fines de auditoría y cumplimiento del Art. 33 del Código del Trabajo.</p>
+      </div>
+      <div>
+        <h3 style="font-size:14px;font-weight:500;color:var(--p-ink);margin-bottom:6px">4. Integridad de los registros</h3>
+        <p>Cada marcación genera un hash SHA-256 encadenado que garantiza la inmutabilidad del registro y permite verificar su autenticidad ante cualquier auditoría de la DT.</p>
+      </div>
+      <div>
+        <h3 style="font-size:14px;font-weight:500;color:var(--p-ink);margin-bottom:6px">5. Derechos del trabajador</h3>
+        <p>Todo trabajador puede solicitar a RRHH: acceso a su historial completo, rectificación de marcas incorrectas (mediante el formulario de solicitudes) y descarga de su comprobante en PDF.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

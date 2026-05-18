@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% block title %}Panel RRHH · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">Panel RRHH</h1>
+    <p class="p-page-sub">{% now "l d \d\e F, Y" %}</p>
+  </div>
+  <div class="p-flex p-gap-8">
+    <a href="{% url 'gestionar_ausencias' %}" class="p-btn">
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Ausencias
+    </a>
+    <a href="{% url 'exportar_excel' %}" class="p-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Excel
+    </a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="p-kpis">
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-g">presentes</span></div>
+    <div class="p-kpi-val">{{ conteo_estados.presente }}</div>
+    <div class="p-kpi-lbl">Trabajando ahora</div>
+  </div>
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-r">sin marcar</span></div>
+    <div class="p-kpi-val">{{ conteo_estados.ausente }}</div>
+    <div class="p-kpi-lbl">Sin entrada hoy</div>
+  </div>
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-g">justificado</span></div>
+    <div class="p-kpi-val">{{ conteo_estados.vacacion|add:conteo_estados.licencia|add:conteo_estados.dia_admin }}</div>
+    <div class="p-kpi-lbl">Vacac. / Licencia / Admin</div>
+  </div>
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-a">pendiente</span></div>
+    <div class="p-kpi-val">{{ total_pendientes }}</div>
+    <div class="p-kpi-lbl">Solicitudes sin resolver</div>
+  </div>
+</div>
+
+{% if es_feriado %}
+<div class="p-alert p-alert-g">
+  <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+  <span>Hoy es <strong>{{ es_feriado.descripcion }}</strong> — feriado legal. No se generan alertas de ausencia.</span>
+</div>
+{% endif %}
+
+<!-- Estado de trabajadores hoy -->
+{% if estado_trabajadores %}
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Estado de trabajadores hoy — {{ hoy|date:"d/m/Y" }}</span>
+    <span class="p-card-count">{{ estado_trabajadores|length }} trabajadores</span>
+  </div>
+  <div style="overflow-x:auto"><table class="p-table">
+    <thead>
+      <tr>
+        <th>Trabajador</th>
+        <th>Cargo</th>
+        <th>Estado</th>
+        <th>Detalle</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in estado_trabajadores %}
+      <tr>
+        <td>
+          <div class="p-td-name">{{ e.trabajador.get_full_name }}</div>
+          <div class="p-td-sub">{{ e.trabajador.perfil.rut|default:"S/I" }}</div>
+        </td>
+        <td><span class="p-badge p-n">{{ e.trabajador.perfil.cargo|default:"–" }}</span></td>
+        <td>
+          {% if e.estado == 'presente' %}
+            <span class="p-badge p-g">🟢 Presente</span>
+          {% elif e.estado == 'ausente' %}
+            <span class="p-badge p-r">🔴 Sin marcar</span>
+          {% elif e.estado == 'vacacion' %}
+            <span class="p-badge p-g">🏖️ Vacaciones</span>
+          {% elif e.estado == 'licencia' %}
+            <span class="p-badge p-b">🏥 Licencia</span>
+          {% elif e.estado == 'dia_admin' %}
+            <span class="p-badge p-a">📋 Día admin.</span>
+          {% elif e.estado == 'feriado' %}
+            <span class="p-badge p-pu">🎉 Feriado</span>
+          {% endif %}
+        </td>
+        <td style="font-size:11px;color:var(--p-ink3)">
+          {% if e.estado == 'presente' %}
+            Marcó entrada hoy
+          {% elif e.estado == 'ausente' %}
+            No ha registrado entrada
+          {% elif e.estado == 'vacacion' %}
+            Vacaciones aprobadas
+          {% elif e.estado == 'licencia' %}
+            Licencia médica activa
+          {% elif e.estado == 'dia_admin' %}
+            Día administrativo aprobado
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Correcciones de marca -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Corrección de marcas</span>
+    <span class="p-card-count">{{ solicitudes.count }}</span>
+  </div>
+  <div class="p-card-body">
+    {% if solicitudes %}
+    <div class="p-req-list">
+      {% for sol in solicitudes %}
+      <div class="p-req">
+        <div class="p-req-av p-gbg" style="color:var(--p-g)">
+          {{ sol.trabajador.first_name|first }}{{ sol.trabajador.last_name|first }}
+        </div>
+        <div class="p-req-body">
+          <div class="p-req-name">{{ sol.trabajador.get_full_name }}</div>
+          <div class="p-req-detail">
+            {{ sol.get_tipo_solicitud_display }} ·
+            {{ sol.tipo_marca_propuesta }} ·
+            {{ sol.fecha_hora_propuesta|date:"d/m/Y H:i" }} ·
+            "{{ sol.motivo|truncatechars:50 }}"
+          </div>
+        </div>
+        {% if sol.tipo_solicitud == 'NUEVA' %}
+          <span class="p-badge p-a">Nueva</span>
+        {% else %}
+          <span class="p-badge p-b">Rectificación</span>
+        {% endif %}
+        <div class="p-flex p-gap-8">
+          <a href="{% url 'responder_solicitud' sol.id 'ACEPTAR' %}" class="p-ia p-ia-ok" title="Aceptar">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          </a>
+          <a href="{% url 'responder_solicitud' sol.id 'RECHAZAR' %}" class="p-ia p-ia-no" title="Rechazar"
+            onclick="return confirm('¿Rechazar esta solicitud?')">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-empty">Sin correcciones pendientes.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Vacaciones pendientes -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Solicitudes de vacaciones</span>
+    <span class="p-card-count">{{ vacaciones_pendientes.count }}</span>
+  </div>
+  <div class="p-card-body">
+    {% if vacaciones_pendientes %}
+    <div class="p-req-list">
+      {% for vac in vacaciones_pendientes %}
+      <div class="p-req">
+        <div class="p-req-av" style="background:var(--p-gbg);color:var(--p-g)">
+          {{ vac.trabajador.first_name|first }}{{ vac.trabajador.last_name|first }}
+        </div>
+        <div class="p-req-body">
+          <div class="p-req-name">{{ vac.trabajador.get_full_name }}</div>
+          <div class="p-req-detail">
+            {{ vac.inicio|date:"d M" }} → {{ vac.fin|date:"d M Y" }}
+            · {{ vac.dias_habiles }} días hábiles
+            {% if vac.comentario %} · "{{ vac.comentario|truncatechars:40 }}"{% endif %}
+          </div>
+        </div>
+        <span class="p-badge p-g">Vacaciones</span>
+        <div class="p-flex p-gap-8">
+          <a href="{% url 'aprobar_vacacion' vac.id 'APROBADA' %}" class="p-ia p-ia-ok" title="Aprobar">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          </a>
+          <a href="{% url 'aprobar_vacacion' vac.id 'RECHAZADA' %}" class="p-ia p-ia-no" title="Rechazar"
+            onclick="return confirm('¿Rechazar vacaciones?')">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-empty">Sin solicitudes de vacaciones pendientes.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Días administrativos -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Días administrativos</span>
+    <span class="p-card-count">{{ dias_admin_pendientes.count }}</span>
+  </div>
+  <div class="p-card-body">
+    {% if dias_admin_pendientes %}
+    <div class="p-req-list">
+      {% for dia in dias_admin_pendientes %}
+      <div class="p-req">
+        <div class="p-req-av" style="background:var(--p-pbg);color:var(--p-p)">
+          {{ dia.trabajador.first_name|first }}{{ dia.trabajador.last_name|first }}
+        </div>
+        <div class="p-req-body">
+          <div class="p-req-name">{{ dia.trabajador.get_full_name }}</div>
+          <div class="p-req-detail">
+            {{ dia.fecha|date:"d M, Y" }} · {{ dia.get_tipo_jornada_display }}
+            {% if dia.motivo %} · "{{ dia.motivo|truncatechars:40 }}"{% endif %}
+          </div>
+        </div>
+        <span class="p-badge p-pu">Día admin.</span>
+        <div class="p-flex p-gap-8">
+          <a href="{% url 'gestionar_dia_admin' dia.id 'aprobar' %}" class="p-ia p-ia-ok" title="Aprobar">
+            <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+          </a>
+          <a href="{% url 'gestionar_dia_admin' dia.id 'rechazar' %}" class="p-ia p-ia-no" title="Rechazar"
+            onclick="return confirm('¿Rechazar?')">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-empty">Sin días administrativos pendientes.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Clima laboral -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Clima laboral — últimos 7 días</span>
+    <a href="{% url 'exportar_clima' %}" class="p-btn" style="font-size:11px;padding:4px 10px">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Excel
+    </a>
+  </div>
+  <div class="p-card-body">
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:center">
+      <div style="position:relative;width:140px;height:140px">
+        <canvas id="grafico-animo"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+          <div style="font-size:20px;font-weight:500;color:var(--p-ink)">
+            {{ grafico_feliz|add:grafico_neutral|add:grafico_molesto }}
+          </div>
+          <div style="font-size:10px;color:var(--p-ink3)">registros</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="p-flex p-gap-8">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--p-gm);flex-shrink:0"></div>
+          <span style="font-size:13px;color:var(--p-ink2);flex:1">Motivado</span>
+          <span style="font-size:13px;font-weight:500;color:var(--p-ink)">{{ grafico_feliz }}</span>
+        </div>
+        <div class="p-flex p-gap-8">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--p-am);flex-shrink:0"></div>
+          <span style="font-size:13px;color:var(--p-ink2);flex:1">Normal</span>
+          <span style="font-size:13px;font-weight:500;color:var(--p-ink)">{{ grafico_neutral }}</span>
+        </div>
+        <div class="p-flex p-gap-8">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--p-rm);flex-shrink:0"></div>
+          <span style="font-size:13px;color:var(--p-ink2);flex:1">Bajo</span>
+          <span style="font-size:13px;font-weight:500;color:var(--p-ink)">{{ grafico_molesto }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('grafico-animo').getContext('2d');
+const feliz={{ grafico_feliz|default:0 }}, neutral={{ grafico_neutral|default:0 }}, molesto={{ grafico_molesto|default:0 }};
+const total=feliz+neutral+molesto;
+new Chart(ctx,{type:'doughnut',data:{
+  labels:['Motivado','Normal','Bajo'],
+  datasets:[{
+    data: total>0?[feliz,neutral,molesto]:[1],
+    backgroundColor: total>0?['#2d8f5e','#ef9f27','#e24b4a']:['#f0efec'],
+    borderWidth:0,hoverOffset:4
+  }]
+},options:{responsive:true,maintainAspectRatio:true,cutout:'72%',
+  plugins:{legend:{display:false},tooltip:{enabled:total>0}}}});
+</script>
+{% endblock %}

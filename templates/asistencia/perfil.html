@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% load l10n %}
+{% block title %}Mi Perfil · Perseus{% endblock %}
+
+{% block content %}
+
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">Mi perfil</h1>
+    <p class="p-page-sub">Mantén tus datos actualizados</p>
+  </div>
+</div>
+
+<div class="p-grid-2" style="align-items:start;gap:16px">
+
+  <!-- Tarjeta de identidad -->
+  <div class="p-card">
+    <div class="p-card-head"><span class="p-card-title">Datos personales</span></div>
+    <div class="p-card-body">
+
+      <!-- Avatar empresa + info -->
+      <div style="display:flex;align-items:center;gap:14px;padding:12px;
+        background:var(--p-s2);border-radius:var(--p-r8);margin-bottom:20px">
+        <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;
+          background:var(--p-s3);border:0.5px solid var(--p-b2);
+          display:flex;align-items:center;justify-content:center">
+          {% if empresa_activa and empresa_activa.logo %}
+            <img src="{{ empresa_activa.logo.url }}"
+              style="width:100%;height:100%;object-fit:cover"
+              alt="{{ empresa_activa.nombre }}">
+          {% else %}
+            <span style="font-size:18px;font-weight:500;color:var(--p-ink2)">
+              {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+            </span>
+          {% endif %}
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:500;color:var(--p-ink)">
+            {{ user.get_full_name }}
+          </div>
+          <div style="font-size:12px;color:var(--p-ink3);margin-top:2px">
+            {{ perfil_usuario.cargo|default:"Sin cargo" }}
+            {% if empresa_activa %} · {{ empresa_activa.nombre }}{% endif %}
+          </div>
+          <div style="font-size:11px;color:var(--p-ink3);margin-top:2px">
+            RUT: {{ perfil_usuario.rut|default:"No registrado" }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos fijos (solo lectura) -->
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;align-items:center">
+          <span style="color:var(--p-ink3);font-size:11px;text-transform:uppercase;font-weight:500">RUT</span>
+          <span style="color:var(--p-ink)">{{ perfil_usuario.rut|default:"–" }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;align-items:center">
+          <span style="color:var(--p-ink3);font-size:11px;text-transform:uppercase;font-weight:500">Cargo</span>
+          <span style="color:var(--p-ink)">{{ perfil_usuario.cargo|default:"–" }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;align-items:center">
+          <span style="color:var(--p-ink3);font-size:11px;text-transform:uppercase;font-weight:500">Empresa</span>
+          <span style="color:var(--p-ink)">{{ empresa_activa.nombre|default:"–" }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;align-items:center">
+          <span style="color:var(--p-ink3);font-size:11px;text-transform:uppercase;font-weight:500">Jornada</span>
+          <span style="color:var(--p-ink)">{{ perfil_usuario.jornada_diaria }}h diarias · entrada {{ perfil_usuario.hora_entrada|time:"H:i" }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;align-items:center">
+          <span style="color:var(--p-ink3);font-size:11px;text-transform:uppercase;font-weight:500">Días hábiles</span>
+          <span style="color:var(--p-ink)">
+            {% if perfil_usuario.trabaja_lunes %}Lu {% endif %}
+            {% if perfil_usuario.trabaja_martes %}Ma {% endif %}
+            {% if perfil_usuario.trabaja_miercoles %}Mi {% endif %}
+            {% if perfil_usuario.trabaja_jueves %}Ju {% endif %}
+            {% if perfil_usuario.trabaja_viernes %}Vi {% endif %}
+            {% if perfil_usuario.trabaja_sabado %}Sá {% endif %}
+            {% if perfil_usuario.trabaja_domingo %}Do{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="p-divider"></div>
+
+      <!-- Formulario editable -->
+      <form method="POST" style="display:flex;flex-direction:column;gap:14px">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="datos">
+
+        <div class="p-form-group">
+          <label class="p-label">Nombre</label>
+          <input type="text" name="first_name" class="p-input"
+            value="{{ user.first_name }}" required>
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Apellido</label>
+          <input type="text" name="last_name" class="p-input"
+            value="{{ user.last_name }}" required>
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Email</label>
+          <input type="email" name="email" class="p-input"
+            value="{{ user.email }}" placeholder="tu@email.com">
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Teléfono</label>
+          <input type="tel" name="telefono" class="p-input"
+            value="{{ perfil_usuario.telefono|default:'' }}"
+            placeholder="+56 9 1234 5678">
+        </div>
+
+        <button type="submit" class="p-btn p-btn-primary">
+          Guardar cambios
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="p-card">
+      <div class="p-card-head"><span class="p-card-title">Cambiar contraseña</span></div>
+      <div class="p-card-body">
+        <form method="POST" style="display:flex;flex-direction:column;gap:14px">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="password">
+
+          <div class="p-form-group">
+            <label class="p-label">Contraseña actual</label>
+            <input type="password" name="password_actual" class="p-input"
+              placeholder="••••••••" required>
+          </div>
+
+          <div class="p-form-group">
+            <label class="p-label">Nueva contraseña</label>
+            <input type="password" name="password_nueva" class="p-input"
+              placeholder="Mínimo 8 caracteres" required>
+          </div>
+
+          <div class="p-form-group">
+            <label class="p-label">Confirmar nueva contraseña</label>
+            <input type="password" name="password_confirmar" class="p-input"
+              placeholder="Repetir contraseña" required>
+          </div>
+
+          <button type="submit" class="p-btn p-btn-primary">
+            Cambiar contraseña
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Resumen de asistencia -->
+    <div class="p-card">
+      <div class="p-card-head">
+        <span class="p-card-title">Resumen</span>
+      </div>
+      <div class="p-card-body" style="display:flex;flex-direction:column;gap:0">
+
+        <!-- Vacaciones -->
+        <div style="padding-bottom:14px;margin-bottom:14px;border-bottom:0.5px solid var(--p-b)">
+          <div style="font-size:11px;font-weight:500;color:var(--p-ink3);
+            text-transform:uppercase;margin-bottom:10px">
+            Vacaciones {{ hoy|date:"Y" }}
+          </div>
+
+          <!-- Barra progreso -->
+          <div style="height:5px;background:var(--p-s3);border-radius:3px;
+            overflow:hidden;margin-bottom:10px">
+            {% if dias_base > 0 %}
+            <div style="height:100%;border-radius:3px;background:var(--p-gm);
+              width:{% widthratio dias_disponibles dias_base 100 %}%">
+            </div>
+            {% endif %}
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center">
+            <div style="background:var(--p-gbg);border-radius:var(--p-r8);padding:8px 4px">
+              <div style="font-size:20px;font-weight:500;color:var(--p-g)">
+                {{ dias_disponibles }}
+              </div>
+              <div style="font-size:10px;color:var(--p-ink3);margin-top:2px">Disponibles</div>
+            </div>
+            <div style="background:var(--p-rbg);border-radius:var(--p-r8);padding:8px 4px">
+              <div style="font-size:20px;font-weight:500;color:var(--p-r)">
+                {{ dias_usados }}
+              </div>
+              <div style="font-size:10px;color:var(--p-ink3);margin-top:2px">Usados</div>
+            </div>
+            <div style="background:var(--p-abg);border-radius:var(--p-r8);padding:8px 4px">
+              <div style="font-size:20px;font-weight:500;color:var(--p-a)">
+                {{ dias_pendientes }}
+              </div>
+              <div style="font-size:10px;color:var(--p-ink3);margin-top:2px">Pendientes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mes actual -->
+        <div style="display:flex;flex-direction:column;gap:10px;
+          padding-bottom:14px;margin-bottom:14px;border-bottom:0.5px solid var(--p-b)">
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span style="color:var(--p-ink2)">Días trabajados este mes</span>
+            <span style="font-weight:500;color:var(--p-ink)">{{ dias_trabajados }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span style="color:var(--p-ink2)">Marcas registradas</span>
+            <span style="font-weight:500;color:var(--p-ink)">{{ total_marcas }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span style="color:var(--p-ink2)">Último acceso</span>
+            <span style="font-weight:500;color:var(--p-ink);font-size:11px;
+              font-variant-numeric:tabular-nums">
+              {{ user.last_login|date:"d/m/Y H:i"|default:"–" }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Licencias activas -->
+        {% if licencias_activas %}
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:500;color:var(--p-ink3);
+            text-transform:uppercase;margin-bottom:8px">
+            Licencias activas
+          </div>
+          {% for l in licencias_activas %}
+          <div class="p-alert p-alert-b" style="font-size:12px;margin-bottom:6px">
+            <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <div>
+              <strong>{{ l.get_tipo_display }}</strong>
+              · hasta {{ l.fin|date:"d/m/Y" }}
+              {% if l.estado == 'PENDIENTE' %}
+                <span class="p-badge p-a" style="margin-left:4px">Pendiente revisión</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <a href="{% url 'ausencias' %}" class="p-btn"
+          style="justify-content:center;text-align:center">
+          Ver mis ausencias →
+        </a>
+        <a href="{% url 'mis_marcas' %}" class="p-btn"
+          style="justify-content:center;text-align:center;margin-top:6px">
+          Ver historial completo
+        </a>
+        <a href="{% url 'mi_pdf' %}" class="p-btn"
+          style="justify-content:center;text-align:center;margin-top:6px">
+          Descargar PDF
+        </a>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

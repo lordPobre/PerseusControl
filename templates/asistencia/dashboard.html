@@ -1,0 +1,616 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}Dashboard · Perseus{% endblock %}
+
+{% block content %}
+
+<!-- Cabecera -->
+<div class="p-page-head">
+  <div>
+    <h1 class="p-page-title">
+      {% now "H" as h %}
+      {% if h < "12" %}Buenos días{% elif h < "19" %}Buenas tardes{% else %}Buenas noches{% endif %},
+      <span style="color:var(--p-gm)">{{ user.first_name }}</span>
+    </h1>
+    <p class="p-page-sub">
+      {{ perfil_usuario.cargo|default:"Colaborador" }}
+      {% if empresa_activa %} · {{ empresa_activa.nombre }}{% endif %}
+    </p>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:12px;color:var(--p-ink3)">{% now "l d \d\e F, Y" %}</div>
+    <div id="gps-status" style="font-size:11px;color:var(--p-ink3);margin-top:3px">Buscando GPS...</div>
+  </div>
+</div>
+
+<!-- Banner ausencia justificada (vacaciones, licencia, día admin, feriado) -->
+{% if ausencia_hoy %}
+<div class="p-status" style="
+  background:var(--p-{{ ausencia_hoy.color }}bg);
+  border-color:rgba(0,0,0,0.08)">
+  <div class="p-flex p-gap-8">
+    <span style="font-size:20px">{{ ausencia_hoy.icono }}</span>
+    <div>
+      <div style="font-size:13px;font-weight:500;color:var(--p-ink)">
+        {{ ausencia_hoy.label }}
+      </div>
+      <div style="font-size:11px;color:var(--p-ink3);margin-top:2px">
+        {{ ausencia_hoy.detalle }}
+      </div>
+    </div>
+  </div>
+  <span class="p-badge p-{{ ausencia_hoy.color }}">Justificado</span>
+</div>
+{% endif %}
+
+<!-- Banner estado de jornada -->
+{% if ultima_marca and ultima_marca.tipo != 'SALIDA' %}
+<div class="p-status p-status-in">
+  <div class="p-flex p-gap-8">
+    <div class="p-pulse p-pulse-on"></div>
+    <div>
+      <div style="font-size:13px;font-weight:500;color:var(--p-g)">
+        {% if ultima_marca.tipo == 'INICIO_COLACION' %}En colación{% else %}Jornada en curso{% endif %}
+      </div>
+      <div style="font-size:11px;color:var(--p-ink3);margin-top:2px">
+        {% if empresa_activa %}{{ empresa_activa.nombre }} · {% endif %}Entrada registrada
+      </div>
+    </div>
+  </div>
+  {% if minutos_hoy %}
+  <div style="text-align:right">
+    <div id="tiempo-jornada" style="font-size:22px;font-weight:500;color:var(--p-gm);font-variant-numeric:tabular-nums">
+      {{ minutos_hoy }}m
+    </div>
+    <div style="font-size:10px;color:var(--p-ink3)">en jornada</div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="p-status p-status-out">
+  <div class="p-flex p-gap-8">
+    <div class="p-pulse p-pulse-off"></div>
+    <div>
+      <div style="font-size:13px;font-weight:500;color:var(--p-ink2)">Fuera de turno</div>
+      <div style="font-size:11px;color:var(--p-ink3);margin-top:2px">
+        {% if ausencia_hoy %}
+          Tienes {{ ausencia_hoy.label|lower }} hoy — si igual deseas marcar puedes hacerlo
+        {% else %}
+          Registra tu entrada para comenzar la jornada
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- KPIs semana -->
+<div class="p-kpis">
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-g">esta semana</span></div>
+    <div class="p-kpi-val">{{ mi_feliz }}</div>
+    <div class="p-kpi-lbl">Días motivado</div>
+  </div>
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-n">esta semana</span></div>
+    <div class="p-kpi-val">{{ mi_neutral }}</div>
+    <div class="p-kpi-lbl">Días normales</div>
+  </div>
+  <div class="p-kpi">
+    <div style="margin-bottom:6px"><span class="p-badge p-a">pendientes</span></div>
+    <div class="p-kpi-val">{{ vacaciones_pendientes }}</div>
+    <div class="p-kpi-lbl">Solicitudes vacaciones</div>
+  </div>
+</div>
+
+<!-- Zona principal: Cámara + Acciones -->
+<div class="p-grid-2" style="align-items:start;gap:16px">
+
+  <!-- Cámara -->
+  <div>
+    <div class="p-cam" id="cam-wrap">
+      <video id="video" autoplay playsinline style="width:100%;display:block;object-fit:cover;min-height:220px"></video>
+      <canvas id="canvas" style="display:none"></canvas>
+      <div class="p-cam-corner p-cam-tl"></div>
+      <div class="p-cam-corner p-cam-tr"></div>
+      <div class="p-cam-corner p-cam-bl"></div>
+      <div class="p-cam-corner p-cam-br"></div>
+      <div class="p-cam-rec" id="cam-rec" style="display:none">
+        <div class="p-rec-dot"></div>
+        <span style="font-size:10px;color:rgba(255,255,255,.8)">EN VIVO</span>
+      </div>
+      <div class="p-cam-msg" id="cam-msg">Iniciando cámara...</div>
+    </div>
+
+    <!-- Barra GPS -->
+    <div class="p-gps-row" style="margin-top:8px">
+      <svg class="p-gps-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="p-gps-txt">Señal GPS</span>
+      <div class="p-gps-bar"><div class="p-gps-fill" id="gps-fill" style="width:0%"></div></div>
+      <span class="p-gps-pct" id="gps-pct">–</span>
+    </div>
+  </div>
+
+  <!-- Formulario marcaje -->
+  <div>
+    <form id="form-marcar" style="display:flex;flex-direction:column;gap:8px">
+      {% csrf_token %}
+      <input type="hidden" id="lat"        name="latitud">
+      <input type="hidden" id="lon"        name="longitud">
+      <input type="hidden" id="foto_b64"   name="foto_base64">
+      <input type="hidden" id="tipo_marca" name="tipo">
+
+      {% if not ultima_marca or ultima_marca.tipo == 'SALIDA' %}
+        <button type="submit" id="btn-entrada"
+          class="p-mark-btn p-mark-green requiere-hw"
+          disabled onclick="setTipo('ENTRADA')">
+          <div class="p-flex p-gap-8">
+            <div class="p-mark-icon">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div>
+              <div class="p-mark-title">Marcar entrada</div>
+              <div class="p-mark-sub" id="msg-entrada">Esperando GPS y cámara...</div>
+            </div>
+          </div>
+          <div class="p-mark-arrow"><svg viewBox="0 0 10 10" stroke="#fff" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 1l4 4-4 4"/></svg></div>
+        </button>
+
+      {% elif ultima_marca.tipo == 'INICIO_COLACION' %}
+        <button type="submit"
+          class="p-mark-btn p-mark-blue"
+          onclick="setTipo('FIN_COLACION')">
+          <div class="p-flex p-gap-8">
+            <div class="p-mark-icon">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div>
+              <div class="p-mark-title">Volver de colación</div>
+              <div class="p-mark-sub">Retomar jornada</div>
+            </div>
+          </div>
+          <div class="p-mark-arrow"><svg viewBox="0 0 10 10" stroke="#fff" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 1l4 4-4 4"/></svg></div>
+        </button>
+
+      {% else %}
+        <button type="submit"
+          class="p-mark-btn p-mark-amber"
+          onclick="setTipo('INICIO_COLACION')">
+          <div class="p-flex p-gap-8">
+            <div class="p-mark-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div>
+              <div class="p-mark-title">Inicio colación</div>
+              <div class="p-mark-sub">Registrar descanso</div>
+            </div>
+          </div>
+          <div class="p-mark-arrow"><svg viewBox="0 0 10 10" stroke="#fff" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 1l4 4-4 4"/></svg></div>
+        </button>
+
+        <button type="button" id="btn-salida"
+          class="p-mark-btn p-mark-red requiere-hw"
+          disabled
+          onclick="abrirModalSalida()">
+          <div class="p-flex p-gap-8">
+            <div class="p-mark-icon">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            </div>
+            <div>
+              <div class="p-mark-title">Marcar salida</div>
+              <div class="p-mark-sub" id="msg-salida">Esperando hardware...</div>
+            </div>
+          </div>
+          <div class="p-mark-arrow"><svg viewBox="0 0 10 10" stroke="#fff" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 1l4 4-4 4"/></svg></div>
+        </button>
+      {% endif %}
+
+      <!-- Acciones secundarias -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+
+        <a href="{% url 'ausencias' %}"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:6px;padding:14px 8px;background:var(--p-s);border:0.5px solid var(--p-b2);
+            border-radius:var(--p-r8);text-decoration:none;transition:background .15s;
+            color:var(--p-ink2)">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--p-gm);
+            fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/>
+          </svg>
+          <span style="font-size:11px;font-weight:500;color:var(--p-ink)">Ausencias</span>
+        </a>
+
+        <a href="{% url 'ausencias' %}?tab=licencias"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:6px;padding:14px 8px;background:var(--p-s);border:0.5px solid var(--p-b2);
+            border-radius:var(--p-r8);text-decoration:none;transition:background .15s;
+            color:var(--p-ink2)">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--p-blm);
+            fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <span style="font-size:11px;font-weight:500;color:var(--p-ink)">Licencias</span>
+        </a>
+
+        <button type="button" onclick="abrirModal('modal-solicitud')"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:6px;padding:14px 8px;background:var(--p-s);border:0.5px solid var(--p-b2);
+            border-radius:var(--p-r8);cursor:pointer;transition:background .15s;
+            font-family:inherit">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--p-am);
+            fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          <span style="font-size:11px;font-weight:500;color:var(--p-ink)">Solicitud</span>
+        </button>
+
+        <a href="{% url 'mi_pdf' %}"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:6px;padding:14px 8px;background:var(--p-s);border:0.5px solid var(--p-b2);
+            border-radius:var(--p-r8);text-decoration:none;transition:background .15s;
+            color:var(--p-ink2)">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--p-pm);
+            fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          <span style="font-size:11px;font-weight:500;color:var(--p-ink)">Mi PDF</span>
+        </a>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Historial del día -->
+<div class="p-card">
+  <div class="p-card-head">
+    <span class="p-card-title">Historial de hoy</span>
+    <div class="p-flex p-gap-8">
+      <span class="p-card-count">{{ marcas_hoy.count }} registros</span>
+      <a href="{% url 'mis_marcas' %}" class="p-btn" style="padding:4px 10px;font-size:11px">Ver todo →</a>
+    </div>
+  </div>
+  <div class="p-card-body">
+    {% if marcas_hoy %}
+    <div class="p-timeline">
+      {% for marca in marcas_hoy %}
+      <div class="p-tl-item">
+        <div class="p-tl-spine">
+          <div class="p-tl-dot
+            {% if marca.tipo == 'ENTRADA' %}p-dot-g
+            {% elif marca.tipo == 'SALIDA' %}p-dot-n
+            {% else %}p-dot-a{% endif %}"></div>
+          {% if not forloop.last %}<div class="p-tl-line"></div>{% endif %}
+        </div>
+        <div class="p-tl-body">
+          <div class="p-tl-label">
+            {{ marca.get_tipo_display }}
+            {% if marca.es_manual %}<span class="p-badge p-a" style="margin-left:6px">manual</span>{% endif %}
+          </div>
+          <div class="p-tl-loc">{{ marca.direccion|default:"Ubicación GPS" }}</div>
+        </div>
+        <div class="p-tl-time">{{ marca.timestamp|date:"H:i" }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-empty">Sin marcas registradas hoy.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Solicitudes pendientes -->
+{% if solicitudes_pendientes %}
+<div class="p-alert p-alert-a" role="alert">
+  <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+  <div>
+    Tienes <strong>{{ solicitudes_pendientes.count }} solicitud(es)</strong> de corrección de marca pendientes de tu revisión.
+    Revísalas en el panel de solicitudes.
+  </div>
+</div>
+{% endif %}
+
+<!-- ── MODAL SOLICITUD ── -->
+<div class="p-modal-overlay" id="modal-solicitud">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">Nueva solicitud de marca</span>
+      <button class="p-modal-close" onclick="cerrarModal('modal-solicitud')">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'crear_solicitud' %}">
+      {% csrf_token %}
+      <div class="p-modal-body">
+
+        <div class="p-form-group">
+          <label class="p-label">Tipo de solicitud</label>
+          <select name="tipo_solicitud" id="sel-tipo" class="p-input p-select" onchange="toggleMarcaOrig()">
+            <option value="NUEVA">Olvidé marcar</option>
+            <option value="RECTIFICACION">Corregir hora existente</option>
+          </select>
+        </div>
+
+        <div id="div-marca-orig" style="display:none">
+          <div class="p-form-group">
+            <label class="p-label">Marca a corregir</label>
+            <select name="marca_id" class="p-input p-select">
+              {% for m in marcas_hoy %}
+              <option value="{{ m.id }}">{{ m.timestamp|date:"H:i" }} — {{ m.get_tipo_display }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div id="div-tipo-marca">
+          <div class="p-form-group">
+            <label class="p-label">Tipo de marca</label>
+            <select name="tipo_marca" class="p-input p-select">
+              <option value="ENTRADA">Entrada</option>
+              <option value="SALIDA">Salida</option>
+              <option value="INICIO_COLACION">Inicio colación</option>
+              <option value="FIN_COLACION">Fin colación</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-grid-2">
+          <div class="p-form-group">
+            <label class="p-label">Fecha real</label>
+            <input type="date" name="fecha" class="p-input" value="{% now 'Y-m-d' %}" required>
+          </div>
+          <div class="p-form-group">
+            <label class="p-label">Hora real</label>
+            <input type="time" name="hora" class="p-input" required>
+          </div>
+        </div>
+
+        <div class="p-form-group">
+          <label class="p-label">Motivo</label>
+          <textarea name="motivo" id="txt-motivo" class="p-input p-textarea"
+            placeholder="Explica brevemente qué pasó..." required></textarea>
+        </div>
+
+        <button type="button" onclick="mejorarIA()" class="p-btn" style="font-size:11px">
+          ✨ Mejorar con IA
+        </button>
+        <span id="ia-load" style="font-size:11px;color:var(--p-ink3);display:none;margin-left:8px">Procesando...</span>
+
+      </div>
+      <div class="p-modal-footer">
+        <button type="button" onclick="cerrarModal('modal-solicitud')" class="p-btn">Cancelar</button>
+        <button type="submit" class="p-btn p-btn-primary">Enviar solicitud</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL SALIDA + ÁNIMO ── -->
+<div class="p-modal-overlay" id="modal-salida">
+  <div class="p-modal">
+    <div class="p-modal-head">
+      <span class="p-modal-title">¡Buen trabajo hoy!</span>
+      <button class="p-modal-close" onclick="cerrarModal('modal-salida')">&times;</button>
+    </div>
+    <form id="form-salida" method="post" action="{% url 'registrar_marca' %}">
+      {% csrf_token %}
+      <input type="hidden" name="tipo"        value="SALIDA">
+      <input type="hidden" name="latitud"     id="lat-salida">
+      <input type="hidden" name="longitud"    id="lon-salida">
+      <input type="hidden" name="foto_base64" id="foto-salida">
+      <input type="hidden" name="animo"       id="input-animo">
+
+      <div class="p-modal-body">
+        <p style="font-size:13px;color:var(--p-ink2)">¿Cómo te sentiste durante tu jornada?</p>
+
+        <div class="p-mood-row">
+          <span class="p-mood-lbl">Selecciona tu ánimo</span>
+          <div class="p-mood-opts">
+            <div class="p-mood-opt" onclick="selAnimo('FELIZ',this)">😄</div>
+            <div class="p-mood-opt" onclick="selAnimo('NEUTRAL',this)">😐</div>
+            <div class="p-mood-opt" onclick="selAnimo('MOLESTO',this)">😔</div>
+          </div>
+        </div>
+
+        <div id="div-comentario" style="display:none">
+          <div class="p-form-group">
+            <label class="p-label">Comentario (opcional)</label>
+            <textarea name="comentario_animo" class="p-input p-textarea"
+              placeholder="¿Qué pasó hoy?..." rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-modal-footer">
+        <button type="button" onclick="cerrarModal('modal-salida')" class="p-btn">Cancelar</button>
+        <button type="submit" id="btn-confirmar-salida" class="p-btn p-btn-r" disabled>
+          Confirmar salida
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let gpsOk = false, camOk = false;
+let latVal = '', lonVal = '';
+
+/* ── Cámara ── */
+function iniciarCamara(){
+  const video = document.getElementById('video');
+  const msg   = document.getElementById('cam-msg');
+  const rec   = document.getElementById('cam-rec');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
+  .then(stream=>{
+    video.srcObject = stream;
+    camOk = true;
+    if(msg) msg.style.display='none';
+    if(rec) rec.style.display='flex';
+    verificarHW();
+  })
+  .catch(()=>{ camOk=false; if(msg) msg.textContent='Sin acceso a cámara'; verificarHW(); });
+}
+
+/* ── GPS ── */
+function iniciarGPS(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(pos=>{
+    latVal = pos.coords.latitude;
+    lonVal = pos.coords.longitude;
+    document.getElementById('lat').value = latVal;
+    document.getElementById('lon').value = lonVal;
+    const acc = Math.min(100, Math.max(10, Math.round(100-(pos.coords.accuracy/50*10))));
+    document.getElementById('gps-fill').style.width = acc+'%';
+    document.getElementById('gps-pct').textContent  = acc+'%';
+    document.getElementById('gps-status').textContent = 'GPS activo · ±'+Math.round(pos.coords.accuracy)+'m';
+    gpsOk = true;
+    verificarHW();
+  }, ()=>{ gpsOk=false; document.getElementById('gps-status').textContent='Sin GPS'; verificarHW(); },
+  {enableHighAccuracy:true});
+}
+
+/* ── Verificar hardware ── */
+function verificarHW(){
+  const ok = gpsOk && camOk;
+  document.querySelectorAll('.requiere-hw').forEach(b=>{
+    b.disabled      = !ok;
+    b.style.opacity = ok?'1':'0.45';
+    b.style.cursor  = ok?'pointer':'not-allowed';
+  });
+  const me = document.getElementById('msg-entrada');
+  const ms = document.getElementById('msg-salida');
+  if(ok){
+    if(me) me.textContent = 'GPS y cámara listos';
+    if(ms) ms.textContent = 'Listo para registrar';
+  }
+}
+
+/* ── Capturar foto ── */
+function capturarFoto(){
+  const video  = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const b64 = canvas.toDataURL('image/jpeg',0.82);
+  document.getElementById('foto_b64').value = b64;
+  return b64;
+}
+
+function setTipo(t){ document.getElementById('tipo_marca').value=t; }
+
+/* ── Envío fetch ── */
+function enviarMarca(payload){
+  // Advertencia si el trabajador tiene ausencia justificada hoy
+  const ausenciaHoy = "{{ ausencia_hoy.label|default:'' }}";
+  if(ausenciaHoy && payload.tipo === 'ENTRADA'){
+    if(!confirm(`Tienes registrado "${ausenciaHoy}" para hoy.\n¿Deseas marcar entrada de todas formas?`)){
+      return;
+    }
+  }
+
+  fetch("{% url 'registrar_marca' %}", {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+    body:JSON.stringify(payload)
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.status==='ok'){
+      mostrarToast(d.mensaje,'g');
+      setTimeout(()=>location.reload(),1800);
+    } else {
+      mostrarToast(d.error||'Error desconocido','r');
+    }
+  })
+  .catch(()=>mostrarToast('Error de conexión','r'));
+}
+
+document.getElementById('form-marcar').addEventListener('submit',function(e){
+  e.preventDefault();
+  const foto = capturarFoto();
+  const tipo = document.getElementById('tipo_marca').value || 'ENTRADA';
+  enviarMarca({tipo, latitud:latVal, longitud:lonVal, foto_base64:foto});
+});
+
+/* ── Modal salida ── */
+function abrirModalSalida(){
+  capturarFoto();
+  document.getElementById('lat-salida').value  = latVal;
+  document.getElementById('lon-salida').value  = lonVal;
+  document.getElementById('foto-salida').value = document.getElementById('foto_b64').value;
+  abrirModal('modal-salida');
+}
+
+document.getElementById('form-salida').addEventListener('submit',function(e){
+  e.preventDefault();
+  const animo = document.getElementById('input-animo').value;
+  const com   = this.querySelector('[name="comentario_animo"]')?.value||'';
+  enviarMarca({
+    tipo:'SALIDA',
+    latitud:document.getElementById('lat-salida').value,
+    longitud:document.getElementById('lon-salida').value,
+    foto_base64:document.getElementById('foto-salida').value,
+    animo, comentario_animo:com
+  });
+});
+
+function selAnimo(val,el){
+  document.getElementById('input-animo').value=val;
+  document.querySelectorAll('.p-mood-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('btn-confirmar-salida').disabled=false;
+  document.getElementById('div-comentario').style.display=(val!=='NEUTRAL')?'':'none';
+}
+
+/* ── Modal solicitud ── */
+function toggleMarcaOrig(){
+  const t=document.getElementById('sel-tipo').value;
+  document.getElementById('div-marca-orig').style.display=t==='RECTIFICACION'?'':'none';
+  document.getElementById('div-tipo-marca').style.display=t==='RECTIFICACION'?'none':'';
+}
+
+async function mejorarIA(){
+  const ta  = document.getElementById('txt-motivo');
+  const ld  = document.getElementById('ia-load');
+  if(!ta.value.trim()) return;
+  ld.style.display='inline';
+  try{
+    const r = await fetch("{% url 'mejorar_texto_ia' %}",{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+      body:JSON.stringify({texto:ta.value})
+    });
+    const d = await r.json();
+    if(d.texto_mejorado) ta.value=d.texto_mejorado;
+  }catch(e){}
+  ld.style.display='none';
+}
+
+/* ── Helpers ── */
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function mostrarToast(msg,tipo){
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:${tipo==='g'?'var(--p-g)':'var(--p-rm)'};color:#fff;
+    padding:10px 20px;border-radius:var(--p-pill);font-size:13px;
+    font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2)`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+/* ── Cerrar modales al hacer click afuera ── */
+document.querySelectorAll('.p-modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+window.addEventListener('load',()=>{ iniciarCamara(); iniciarGPS(); });
+</script>
+{% endblock %}
